@@ -4,12 +4,12 @@
       <el-col :xs="12" :sm="12" :md="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <div class="stat-icon book-icon">
-              <el-icon :size="36"><Reading /></el-icon>
+            <div class="stat-icon hotel-icon">
+              <el-icon :size="36"><OfficeBuilding /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ statistics.totalBooks }}</div>
-              <div class="stat-label">总图书数</div>
+              <div class="stat-value">{{ statistics.totalHotels }}</div>
+              <div class="stat-label">总酒店数</div>
             </div>
           </div>
         </el-card>
@@ -21,8 +21,8 @@
               <el-icon :size="36"><CircleCheck /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ statistics.availableBooks }}</div>
-              <div class="stat-label">可借图书</div>
+              <div class="stat-value">{{ statistics.availableRooms }}</div>
+              <div class="stat-label">可用房间</div>
             </div>
           </div>
         </el-card>
@@ -30,12 +30,12 @@
       <el-col :xs="12" :sm="12" :md="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <div class="stat-icon borrowed-icon">
+            <div class="stat-icon occupied-icon">
               <el-icon :size="36"><DocumentChecked /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ statistics.borrowedBooks }}</div>
-              <div class="stat-label">已借出</div>
+              <div class="stat-value">{{ statistics.occupiedRooms }}</div>
+              <div class="stat-label">已入住房间</div>
             </div>
           </div>
         </el-card>
@@ -43,12 +43,12 @@
       <el-col :xs="12" :sm="12" :md="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <div class="stat-icon category-icon">
-              <el-icon :size="36"><Menu /></el-icon>
+            <div class="stat-icon order-icon">
+              <el-icon :size="36"><Tickets /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ statistics.totalCategories }}</div>
-              <div class="stat-label">分类数量</div>
+              <div class="stat-value">{{ statistics.totalOrders }}</div>
+              <div class="stat-label">今日订单</div>
             </div>
           </div>
         </el-card>
@@ -60,34 +60,34 @@
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>图书分类统计</span>
+              <span>房型分布统计</span>
             </div>
           </template>
-          <div ref="categoryChartRef" class="chart-container"></div>
+          <div ref="roomTypeChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="24" :md="12" :lg="8">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>本周借阅趋势</span>
+              <span>本周入住趋势</span>
             </div>
           </template>
-          <div ref="borrowTrendChartRef" class="chart-container"></div>
+          <div ref="occupancyTrendChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="24" :md="12" :lg="8">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>借阅排行榜</span>
+              <span>热门酒店排行</span>
             </div>
           </template>
           <div class="rank-list">
-            <div v-for="(book, index) in hotBooks" :key="index" class="rank-item">
+            <div v-for="(hotel, index) in hotHotels" :key="index" class="rank-item">
               <span :class="['rank-number', { top: index < 3 }]">{{ index + 1 }}</span>
-              <span class="rank-title">{{ book.title }}</span>
-              <span class="rank-count">{{ book.borrowCount }}次</span>
+              <span class="rank-title">{{ hotel.name }}</span>
+              <span class="rank-count">{{ hotel.orderCount }}单</span>
             </div>
           </div>
         </el-card>
@@ -99,11 +99,11 @@
         <el-card class="table-card">
           <template #header>
             <div class="card-header">
-              <span>热门图书</span>
-              <el-button type="primary" link @click="viewAllBooks">查看全部</el-button>
+              <span>热门酒店</span>
+              <el-button type="primary" link @click="viewAllHotels">查看全部</el-button>
             </div>
           </template>
-          <el-table :data="hotBooks" style="width: 100%" max-height="300">
+          <el-table :data="hotHotels" style="width: 100%" max-height="300">
             <el-table-column label="排名" width="70" align="center">
               <template #default="scope">
                 <el-tag :type="scope.$index < 3 ? 'danger' : 'info'" effect="dark">
@@ -111,9 +111,9 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="title" label="书名" />
-            <el-table-column prop="author" label="作者" width="120" />
-            <el-table-column prop="borrowCount" label="借阅次数" width="100" align="center" />
+            <el-table-column prop="name" label="酒店名称" />
+            <el-table-column prop="location" label="位置" width="150" />
+            <el-table-column prop="orderCount" label="订单数" width="100" align="center" />
           </el-table>
         </el-card>
       </el-col>
@@ -121,15 +121,15 @@
         <el-card class="table-card">
           <template #header>
             <div class="card-header">
-              <span>最新入库</span>
-              <el-button type="primary" link @click="viewNewBooks">查看全部</el-button>
+              <span>最新订单</span>
+              <el-button type="primary" link @click="viewNewOrders">查看全部</el-button>
             </div>
           </template>
-          <el-table :data="newBooks" style="width: 100%" max-height="300">
-            <el-table-column prop="title" label="书名" />
-            <el-table-column prop="author" label="作者" width="100" />
-            <el-table-column prop="categoryName" label="分类" width="120" />
-            <el-table-column prop="createdTime" label="入库时间" width="120" />
+          <el-table :data="newOrders" style="width: 100%" max-height="300">
+            <el-table-column prop="orderNo" label="订单号" width="120" />
+            <el-table-column prop="hotelName" label="酒店名称" />
+            <el-table-column prop="roomType" label="房型" width="120" />
+            <el-table-column prop="createdTime" label="下单时间" width="120" />
           </el-table>
         </el-card>
       </el-col>
@@ -139,41 +139,39 @@
 
 <script setup name="Index">
 import { ref, onMounted, nextTick } from 'vue'
-import { Reading, CircleCheck, DocumentChecked, Menu } from '@element-plus/icons-vue'
+import { OfficeBuilding, CircleCheck, DocumentChecked, Tickets } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const categoryChartRef = ref(null)
-const borrowTrendChartRef = ref(null)
-
-const version = ref('1.0.0')
+const roomTypeChartRef = ref(null)
+const occupancyTrendChartRef = ref(null)
 
 const statistics = ref({
-  totalBooks: 0,
-  availableBooks: 0,
-  borrowedBooks: 0,
-  totalCategories: 0
+  totalHotels: 0,
+  availableRooms: 0,
+  occupiedRooms: 0,
+  totalOrders: 0
 })
 
-const hotBooks = ref([
-  { title: '活着', author: '余华', borrowCount: 156 },
-  { title: '三体', author: '刘慈欣', borrowCount: 142 },
-  { title: '百年孤独', author: '加西亚·马尔克斯', borrowCount: 128 },
-  { title: '追风筝的人', author: '卡勒德·胡赛尼', borrowCount: 115 },
-  { title: '解忧杂货店', author: '东野圭吾', borrowCount: 98 },
-  { title: '白夜行', author: '东野圭吾', borrowCount: 87 },
-  { title: '人类简史', author: '尤瓦尔·赫拉利', borrowCount: 76 },
-  { title: '平凡的世界', author: '路遥', borrowCount: 65 },
-  { title: '小王子', author: '圣埃克苏佩里', borrowCount: 54 },
-  { title: '围城', author: '钱钟书', borrowCount: 43 }
+const hotHotels = ref([
+  { name: '北京国际大酒店', location: '北京市朝阳区', orderCount: 256 },
+  { name: '上海外滩希尔顿', location: '上海市黄浦区', orderCount: 242 },
+  { name: '广州花园酒店', location: '广州市越秀区', orderCount: 228 },
+  { name: '深圳福田香格里拉', location: '深圳市福田区', orderCount: 215 },
+  { name: '杭州西湖索菲特', location: '杭州市上城区', orderCount: 198 },
+  { name: '成都天府丽都喜来登', location: '成都市青羊区', orderCount: 187 },
+  { name: '三亚亚特兰蒂斯', location: '三亚市海棠区', orderCount: 176 },
+  { name: '西安威斯汀', location: '西安市雁塔区', orderCount: 165 },
+  { name: '南京金陵饭店', location: '南京市鼓楼区', orderCount: 154 },
+  { name: '武汉万达瑞华', location: '武汉市武昌区', orderCount: 143 }
 ])
 
-const newBooks = ref([
-  { title: '行舟绿水中', author: '李凤利', categoryName: '文学小说', createdTime: '2025-04-24' },
-  { title: '迟到的春天', author: '张三', categoryName: '历史传记', createdTime: '2025-05-01' },
-  { title: 'AI 人工智能', author: '王五', categoryName: '计算机科学', createdTime: '2025-05-02' },
-  { title: '深度学习导论', author: '赵六', categoryName: '计算机科学', createdTime: '2025-05-06' }
+const newOrders = ref([
+  { orderNo: 'ORD2025051901', hotelName: '北京国际大酒店', roomType: '豪华大床房', createdTime: '2025-05-19 14:30' },
+  { orderNo: 'ORD2025051902', hotelName: '上海外滩希尔顿', roomType: '行政双床房', createdTime: '2025-05-19 13:25' },
+  { orderNo: 'ORD2025051903', hotelName: '广州花园酒店', roomType: '商务套房', createdTime: '2025-05-19 12:15' },
+  { orderNo: 'ORD2025051904', hotelName: '深圳福田香格里拉', roomType: '标准大床房', createdTime: '2025-05-19 11:40' }
 ])
 
 function goTarget(href) {
@@ -182,16 +180,16 @@ function goTarget(href) {
 
 function initStatistics() {
   statistics.value = {
-    totalBooks: 172,
-    availableBooks: 145,
-    borrowedBooks: 27,
-    totalCategories: 12
+    totalHotels: 58,
+    availableRooms: 342,
+    occupiedRooms: 158,
+    totalOrders: 89
   }
 }
 
-function initCategoryChart() {
-  if (!categoryChartRef.value) return
-  const chart = echarts.init(categoryChartRef.value)
+function initRoomTypeChart() {
+  if (!roomTypeChartRef.value) return
+  const chart = echarts.init(roomTypeChartRef.value)
   const option = {
     tooltip: {
       trigger: 'item',
@@ -204,17 +202,17 @@ function initCategoryChart() {
     },
     series: [
       {
-        name: '图书分类',
+        name: '房型分布',
         type: 'pie',
         radius: '60%',
         center: ['60%', '50%'],
         data: [
-          { value: 45, name: '文学小说' },
-          { value: 32, name: '计算机科学' },
-          { value: 28, name: '历史传记' },
-          { value: 25, name: '自然科学' },
-          { value: 22, name: '工程技术' },
-          { value: 20, name: '经济管理' }
+          { value: 120, name: '标准大床房' },
+          { value: 95, name: '豪华双床房' },
+          { value: 78, name: '商务套房' },
+          { value: 56, name: '行政大床房' },
+          { value: 35, name: '总统套房' },
+          { value: 16, name: '其他' }
         ],
         emphasis: {
           itemStyle: {
@@ -230,9 +228,9 @@ function initCategoryChart() {
   window.addEventListener('resize', () => chart.resize())
 }
 
-function initBorrowTrendChart() {
-  if (!borrowTrendChartRef.value) return
-  const chart = echarts.init(borrowTrendChartRef.value)
+function initOccupancyTrendChart() {
+  if (!occupancyTrendChartRef.value) return
+  const chart = echarts.init(occupancyTrendChartRef.value)
   const option = {
     tooltip: {
       trigger: 'axis'
@@ -246,10 +244,10 @@ function initBorrowTrendChart() {
     },
     series: [
       {
-        name: '借阅次数',
+        name: '入住人数',
         type: 'line',
         smooth: true,
-        data: [120, 132, 101, 134, 90, 230, 210],
+        data: [180, 195, 170, 210, 245, 320, 290],
         itemStyle: {
           color: '#409EFF'
         },
@@ -272,19 +270,19 @@ function initBorrowTrendChart() {
   window.addEventListener('resize', () => chart.resize())
 }
 
-function viewAllBooks() {
-  router.push('/book/book')
+function viewAllHotels() {
+  router.push('/biz/hotel')
 }
 
-function viewNewBooks() {
-  router.push('/book/book')
+function viewNewOrders() {
+  router.push('/biz/order')
 }
 
 onMounted(() => {
   initStatistics()
   nextTick(() => {
-    initCategoryChart()
-    initBorrowTrendChart()
+    initRoomTypeChart()
+    initOccupancyTrendChart()
   })
 })
 </script>
@@ -332,7 +330,7 @@ onMounted(() => {
           align-items: center;
           justify-content: center;
 
-          &.book-icon {
+          &.hotel-icon {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
           }
@@ -342,12 +340,12 @@ onMounted(() => {
             color: #fff;
           }
 
-          &.borrowed-icon {
+          &.occupied-icon {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: #fff;
           }
 
-          &.category-icon {
+          &.order-icon {
             background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
             color: #fff;
           }
