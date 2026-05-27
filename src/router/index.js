@@ -88,38 +88,15 @@ export const constantRoutes = [
     path: '/biz',
     component: Layout,
     hidden: false,
+    alwaysShow: true,
     redirect: 'noredirect',
     meta: { title: '业务管理', icon: 'shopping' },
     children: [
-      {
-        path: 'hotel',
-        component: () => import('@/views/biz/hotel/index'),
-        name: 'Hotel',
-        meta: { title: '酒店管理', icon: 'server' }
-      },
-      {
-        path: 'room',
-        component: () => import('@/views/biz/room/index'),
-        name: 'Room',
-        meta: { title: '房源管理', icon: 'form' }
-      },
-      {
-        path: 'order',
-        component: () => import('@/views/biz/order/index'),
-        name: 'Order',
-        meta: { title: '订单管理', icon: 'list' }
-      },
       {
         path: 'comment',
         component: () => import('@/views/biz/comment/index'),
         name: 'Comment',
         meta: { title: '评价管理', icon: 'message' }
-      },
-      {
-        path: 'payment',
-        component: () => import('@/views/biz/payment/index'),
-        name: 'Payment',
-        meta: { title: '支付管理', icon: 'money' }
       }
     ]
   }
