@@ -38,6 +38,11 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/index',
+    component: () => import('@/views/front/index'),
+    hidden: true
+  },
+  {
     path: '/login',
     component: () => import('@/views/login'),
     hidden: true
@@ -60,12 +65,12 @@ export const constantRoutes = [
   {
     path: '',
     component: Layout,
-    redirect: '/index',
+    redirect: '/dashboard',
     children: [
       {
-        path: '/index',
+        path: '/dashboard',
         component: () => import('@/views/index'),
-        name: 'Index',
+        name: 'Dashboard',
         meta: { title: '首页', icon: 'dashboard', affix: true }
       }
     ]
@@ -92,6 +97,18 @@ export const constantRoutes = [
     redirect: 'noredirect',
     meta: { title: '业务管理', icon: 'shopping' },
     children: [
+      {
+        path: 'merchant',
+        component: () => import('@/views/biz/merchant/index'),
+        name: 'Merchant',
+        meta: { title: '商户管理', icon: 'peoples' }
+      },
+      {
+        path: 'merchantAudit',
+        component: () => import('@/views/biz/merchant/audit'),
+        name: 'MerchantAudit',
+        meta: { title: '商户审核', icon: 'checkbox' }
+      },
       {
         path: 'comment',
         component: () => import('@/views/biz/comment/index'),

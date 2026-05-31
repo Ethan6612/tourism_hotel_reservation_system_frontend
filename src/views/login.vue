@@ -121,14 +121,25 @@ function handleLogin() {
       }
       // 调用action的登录方法
       userStore.login(loginForm.value).then(() => {
-        const query = route.query
-        const otherQueryParams = Object.keys(query).reduce((acc, cur) => {
-          if (cur !== "redirect") {
-            acc[cur] = query[cur]
+        // 登录成功后获取用户信息判断角色
+        userStore.getInfo().then((res) => {
+          const query = route.query
+          const otherQueryParams = Object.keys(query).reduce((acc, cur) => {
+            if (cur !== "redirect") {
+              acc[cur] = query[cur]
+            }
+            return acc
+          }, {})
+          // 判断用户角色，管理员跳转到管理页面，普通用户和商户跳转到主页
+          const isAdmin = res.roles && res.roles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
+          if (isAdmin) {
+            // 管理员跳转到管理界面
+            router.push({ path: redirect.value || "/dashboard", query: otherQueryParams })
+          } else {
+            // 商户和普通用户跳转到主页
+            router.push({ path: redirect.value || "/index", query: otherQueryParams })
           }
-          return acc
-        }, {})
-        router.push({ path: redirect.value || "/", query: otherQueryParams })
+        })
       }).catch(() => {
         loading.value = false
         // 重新获取验证码

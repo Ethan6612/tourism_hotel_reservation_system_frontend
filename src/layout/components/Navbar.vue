@@ -10,6 +10,12 @@
 
     <div class="right-menu">
       <template v-if="appStore.device !== 'mobile'">
+        <el-tooltip content="返回主页" effect="dark" placement="bottom">
+          <router-link to="/index" class="right-menu-item hover-effect">
+            <span class="front-home-btn">🏠</span>
+          </router-link>
+        </el-tooltip>
+
         <header-search id="header-search" class="right-menu-item" />
 
         <el-tooltip content="源码地址" effect="dark" placement="bottom">
@@ -233,6 +239,12 @@ async function toggleTheme(event) {
         &:hover {
           background: rgba(0, 0, 0, 0.025);
         }
+      }
+
+      .front-home-btn {
+        font-size: 20px;
+        display: inline-block;
+        vertical-align: middle;
       }
 
       &.theme-switch-wrapper {

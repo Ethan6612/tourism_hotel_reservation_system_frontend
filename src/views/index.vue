@@ -100,7 +100,6 @@
           <template #header>
             <div class="card-header">
               <span>热门酒店</span>
-              <el-button type="primary" link @click="viewAllHotels">查看全部</el-button>
             </div>
           </template>
           <el-table :data="hotHotels" style="width: 100%" max-height="300">
@@ -122,7 +121,6 @@
           <template #header>
             <div class="card-header">
               <span>最新订单</span>
-              <el-button type="primary" link @click="viewNewOrders">查看全部</el-button>
             </div>
           </template>
           <el-table :data="newOrders" style="width: 100%" max-height="300">
@@ -268,14 +266,6 @@ function initOccupancyTrendChart() {
   }
   chart.setOption(option)
   window.addEventListener('resize', () => chart.resize())
-}
-
-function viewAllHotels() {
-  router.push('/biz/hotel')
-}
-
-function viewNewOrders() {
-  router.push('/biz/order')
 }
 
 onMounted(() => {
