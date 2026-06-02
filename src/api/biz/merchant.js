@@ -5,6 +5,9 @@ export function listMerchant(query) {
   return request({
     url: '/api/merchant/query',
     method: 'post',
+    headers: {
+      repeatSubmit: false
+    },
     data: query
   })
 }
@@ -80,6 +83,9 @@ export function listMerchantAudit(query) {
   return request({
     url: '/api/merchant/audit/query',
     method: 'post',
+    headers: {
+      repeatSubmit: false
+    },
     data: query
   })
 }

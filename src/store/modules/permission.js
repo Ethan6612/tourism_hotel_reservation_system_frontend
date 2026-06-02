@@ -32,6 +32,20 @@ const usePermissionStore = defineStore(
       setSidebarRouters(routes) {
         this.sidebarRouters = routes
       },
+      // 清除路由
+      clearRoutes() {
+        this.routes = []
+        this.addRoutes = []
+        this.defaultRoutes = []
+        this.topbarRouters = []
+        this.sidebarRouters = []
+        // 移除所有动态添加的路由
+        router.getRoutes().forEach(route => {
+          if (route.name && !constantRoutes.find(r => r.name === route.name)) {
+            router.removeRoute(route.name)
+          }
+        })
+      },
       generateRoutes(roles) {
         return new Promise(resolve => {
           // 向后端请求路由数据

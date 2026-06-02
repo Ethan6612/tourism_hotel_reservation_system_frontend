@@ -4,6 +4,7 @@ import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { isHttp, isEmpty } from "@/utils/validate"
 import defAva from '@/assets/images/profile.jpg'
+import usePermissionStore from '@/store/modules/permission'
 
 const useUserStore = defineStore(
   'user',
@@ -83,6 +84,8 @@ const useUserStore = defineStore(
             this.roles = []
             this.permissions = []
             removeToken()
+            // 清除动态路由
+            usePermissionStore().clearRoutes()
             resolve()
           }).catch(error => {
             reject(error)
