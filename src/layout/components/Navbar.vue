@@ -40,7 +40,15 @@
         </el-tooltip>
       </template>
 
-      <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover">
+      <template v-if="visitorMode">
+        <div class="visitor-menu right-menu-item">
+          <span class="visitor-label">游客</span>
+          <el-button type="primary" link @click="goLogin">登录</el-button>
+          <el-button type="primary" link @click="goRegister">注册</el-button>
+        </div>
+      </template>
+
+      <el-dropdown v-else @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover">
         <div class="avatar-wrapper">
           <img :src="userStore.avatar" class="user-avatar" />
           <span class="user-nickname"> {{ userStore.nickName }} </span>
@@ -77,9 +85,20 @@ import useAppStore from '@/store/modules/app'
 import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
 
+const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+
+const visitorMode = computed(() => !userStore.token && sessionStorage.getItem('isVisitor') === 'true')
+
+function goLogin() {
+  router.push('/login')
+}
+
+function goRegister() {
+  router.push({ path: '/login', query: { tab: 'register' } })
+}
 
 function toggleSideBar() {
   appStore.toggleSideBar()
@@ -293,6 +312,24 @@ async function toggleTheme(event) {
           top: 25px;
           font-size: 12px;
         }
+      }
+    }
+
+    .visitor-menu {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-right: 12px;
+      font-size: 14px;
+
+      .visitor-label {
+        color: #909399;
+        margin-right: 4px;
+      }
+
+      .el-button {
+        font-size: 14px;
+        font-weight: 600;
       }
     }
   }

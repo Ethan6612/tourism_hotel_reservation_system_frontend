@@ -24,6 +24,15 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="DataAnalysis"
+          @click="handleStatistics"
+          v-hasPermi="['comment:query']"
+        >评分统计</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -61,7 +70,7 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="200" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="250" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['comment:query']">详情</el-button>
           <el-button 
@@ -72,6 +81,13 @@
             @click="handleReply(scope.row)" 
             v-hasPermi="['comment:reply']"
           >回复</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['comment:remove']"
+          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -128,17 +144,48 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 评分统计对话框 -->
+    <el-dialog title="评分统计" v-model="statisticsOpen" width="700px" append-to-body>
+      <el-form :model="statisticsForm" label-width="100px">
+        <el-form-item label="酒店ID">
+          <el-input v-model="statisticsForm.hotelId" placeholder="请输入酒店ID（可选）" clearable />
+        </el-form-item>
+        <el-form-item label="房型ID">
+          <el-input v-model="statisticsForm.roomId" placeholder="请输入房型ID（可选）" clearable />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="loadStatistics">查询统计</el-button>
+        </el-form-item>
+      </el-form>
+
+      <div v-if="statisticsData" style="margin-top: 20px;">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="平均评分">
+            <el-rate v-model="statisticsData.averageScore" disabled show-score text-color="#ff9900" />
+            {{ statisticsData.averageScore }}
+          </el-descriptions-item>
+          <el-descriptions-item label="评价总数">{{ statisticsData.totalComments }}</el-descriptions-item>
+          <el-descriptions-item label="5星数量">{{ statisticsData.fiveStarCount }}</el-descriptions-item>
+          <el-descriptions-item label="4星数量">{{ statisticsData.fourStarCount }}</el-descriptions-item>
+          <el-descriptions-item label="3星数量">{{ statisticsData.threeStarCount }}</el-descriptions-item>
+          <el-descriptions-item label="2星数量">{{ statisticsData.twoStarCount }}</el-descriptions-item>
+          <el-descriptions-item label="1星数量">{{ statisticsData.oneStarCount }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Comment">
-import { listComment, getComment, replyComment } from "@/api/biz/comment"
+import { listComment, getComment, replyComment, delComment, getScoreStatistics } from "@/api/biz/comment"
 
 const { proxy } = getCurrentInstance()
 
 const commentList = ref([])
 const viewOpen = ref(false)
 const replyOpen = ref(false)
+const statisticsOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const total = ref(0)
@@ -155,6 +202,13 @@ const currentComment = ref({})
 const replyForm = ref({
   replyContent: ''
 })
+
+const statisticsForm = ref({
+  hotelId: undefined,
+  roomId: undefined
+})
+
+const statisticsData = ref(null)
 
 const replyRules = {
   replyContent: [{ required: true, message: "回复内容不能为空", trigger: "blur" }]
@@ -211,6 +265,42 @@ function submitReply() {
         replyOpen.value = false
         getList(null)
       })
+    }
+  })
+}
+
+/** 删除按钮操作 */
+function handleDelete(row) {
+  proxy.$modal.confirm('是否确认删除评价编号为"' + row.id + '"的数据项？').then(function() {
+    return delComment(row.id)
+  }).then(() => {
+    getList(null)
+    proxy.$modal.msgSuccess("删除成功")
+  }).catch(() => {})
+}
+
+/** 评分统计按钮操作 */
+function handleStatistics() {
+  statisticsForm.value.hotelId = undefined
+  statisticsForm.value.roomId = undefined
+  statisticsData.value = null
+  statisticsOpen.value = true
+}
+
+/** 加载统计数据 */
+function loadStatistics() {
+  const params = {}
+  if (statisticsForm.value.hotelId) {
+    params.hotelId = statisticsForm.value.hotelId
+  }
+  if (statisticsForm.value.roomId) {
+    params.roomId = statisticsForm.value.roomId
+  }
+
+  getScoreStatistics(params).then(response => {
+    statisticsData.value = response.data
+    if (statisticsData.value.averageScore) {
+      statisticsData.value.averageScore = parseFloat(statisticsData.value.averageScore)
     }
   })
 }

@@ -247,10 +247,10 @@ const tabs = [
 
 const isLoggedIn = computed(() => !!getToken())
 
-const userName = computed(() => userStore.name || userStore.nickName || '用户')
+const userName = computed(() => userStore.nickName || userStore.name || '用户')
 
 const userAvatar = computed(() => {
-  const name = userStore.name || userStore.nickName || '用户'
+  const name = userStore.nickName || userStore.name || '用户'
   return name.charAt(0).toUpperCase()
 })
 

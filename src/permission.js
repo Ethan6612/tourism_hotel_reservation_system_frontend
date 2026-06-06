@@ -11,10 +11,17 @@ import usePermissionStore from '@/store/modules/permission'
 
 NProgress.configure({ showSpinner: false })
 
-const whiteList = ['/login', '/register', '/index']
+const visitorPaths = ['/index', '/']
+
+const isVisitor = () => sessionStorage.getItem('isVisitor') === 'true'
+const whiteList = ['/login', '/register', '/index'] // /register 会重定向到 /login?tab=register
 
 const isWhiteList = (path) => {
   return whiteList.some(pattern => isPathMatch(pattern, path))
+}
+
+const isVisitorPath = (path) => {
+  return visitorPaths.some(pattern => isPathMatch(pattern, path))
 }
 
 router.beforeEach((to, from, next) => {
@@ -40,11 +47,11 @@ router.beforeEach((to, from, next) => {
                 router.addRoute(route) // 动态添加可访问路由表
               }
             })
-            
+
             // 获取用户角色
             const userRoles = useUserStore().roles
             const isAdmin = userRoles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
-            
+
             // 添加路由后，根据角色决定首次登录的跳转路径
             // 只有从登录页跳转过来时才进行角色重定向
             if (from.path === '/login') {
