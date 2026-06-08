@@ -338,7 +338,10 @@ function handleLogin() {
             getCode()
           }
         })
-        // 直接跳转到目标路径，由权限守卫统一处理用户信息获取和路由生成
+        // 获取用户信息
+        return userStore.getInfo()
+      }).then((userInfo) => {
+        // 所有用户登录后都跳转到首页
         router.push('/index')
       }).catch(() => {
         loading.value = false

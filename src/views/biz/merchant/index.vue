@@ -32,6 +32,13 @@
           <el-option label="注销" value="2" />
         </el-select>
       </el-form-item>
+      <el-form-item label="审核状态" prop="auditStatus">
+        <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable>
+          <el-option label="待审核" value="0" />
+          <el-option label="审核通过" value="1" />
+          <el-option label="审核驳回" value="2" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -232,9 +239,46 @@
 <script setup name="Merchant">
 import { listMerchant, getMerchant, delMerchant, addMerchant, updateMerchant, freezeMerchant, unfreezeMerchant, deregisterMerchant } from "@/api/biz/merchant"
 import { useRouter } from 'vue-router'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
 const router = useRouter()
+const userStore = useUserStore()
+
+// 检查商户用户是否完成登记
+function checkMerchantRegistration() {
+  const userRoles = userStore.roles
+  const isMerchant = userRoles && userRoles.some(role => 
+    role === 'merchant' || role === 'ROLE_MERCHANT'
+  )
+  
+  if (isMerchant) {
+    const merchantRegistered = localStorage.getItem('merchantRegistered')
+    if (!merchantRegistered) {
+      // 未完成登记，跳转到登记页面
+      proxy.$modal.confirm('您还未完成商户信息登记，请先完善商户信息', '提示', {
+        confirmButtonText: '去登记',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        router.push('/merchant/register')
+      }).catch(() => {
+        // 用户取消，返回上一页
+        router.back()
+      })
+      return false
+    }
+  }
+  return true
+}
+
+// 页面加载时检查
+onMounted(() => {
+  if (!checkMerchantRegistration()) {
+    return
+  }
+  getList(null)
+})
 
 const merchantList = ref([])
 const open = ref(false)
@@ -251,7 +295,8 @@ const queryParams = ref({
   licenseNo: undefined,
   legalPerson: undefined,
   phone: undefined,
-  status: undefined
+  status: undefined,
+  auditStatus: '1'  // 默认只显示审核通过的商户
 })
 
 const form = ref({})
@@ -431,6 +476,4 @@ function handleDelete(row) {
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
 }
-
-getList(null)
 </script>
