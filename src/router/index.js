@@ -43,6 +43,11 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/home',
+    component: () => import('@/views/front/userHome'),
+    hidden: true
+  },
+  {
     path: '/login',
     component: () => import('@/views/login'),
     hidden: true
@@ -98,6 +103,34 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/user/myComments',
+    component: () => import('@/views/front/myComments'),
+    hidden: true,
+    name: 'MyComments',
+    meta: { title: '我的评价' }
+  },
+  {
+    path: '/user/comment/write',
+    component: () => import('@/views/front/writeComment'),
+    hidden: true,
+    name: 'WriteComment',
+    meta: { title: '写评价' }
+  },
+  {
+    path: '/user/comment/edit/:id',
+    component: () => import('@/views/front/writeComment'),
+    hidden: true,
+    name: 'EditComment',
+    meta: { title: '修改评价' }
+  },
+  {
+    path: '/user/comment/append/:id',
+    component: () => import('@/views/front/writeComment'),
+    hidden: true,
+    name: 'AppendComment',
+    meta: { title: '追加评价' }
+  },
+  {
     path: '/biz',
     component: Layout,
     hidden: false,
@@ -122,6 +155,12 @@ export const constantRoutes = [
         component: () => import('@/views/biz/comment/index'),
         name: 'Comment',
         meta: { title: '评价管理', icon: 'message' }
+      },
+      {
+        path: 'merchantComments',
+        component: () => import('@/views/biz/merchantComments'),
+        name: 'MerchantComments',
+        meta: { title: '评价管理（商户）', icon: 'message' }
       }
     ]
   }

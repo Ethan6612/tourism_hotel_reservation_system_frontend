@@ -329,7 +329,7 @@ function handleLogin() {
             if (isAdmin) {
               router.push({ path: redirect.value || "/dashboard", query: otherQueryParams })
             } else {
-              router.push({ path: redirect.value || "/index", query: otherQueryParams })
+              router.push({ path: redirect.value || "/home", query: otherQueryParams })
             }
           })
         }).catch(() => {
@@ -342,7 +342,7 @@ function handleLogin() {
         return userStore.getInfo()
       }).then((userInfo) => {
         // 所有用户登录后都跳转到首页
-        router.push('/index')
+        router.push('/home')
       }).catch(() => {
         loading.value = false
         if (captchaEnabled.value) {
