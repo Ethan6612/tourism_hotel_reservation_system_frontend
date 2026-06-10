@@ -157,6 +157,12 @@ export const constantRoutes = [
         meta: { title: '评价管理', icon: 'message' }
       },
       {
+        path: 'payment',
+        component: () => import('@/views/biz/payment/index'),
+        name: 'Payment',
+        meta: { title: '支付记录', icon: 'pay' }
+      },
+      {
         path: 'merchantComments',
         component: () => import('@/views/biz/merchantComments'),
         name: 'MerchantComments',
