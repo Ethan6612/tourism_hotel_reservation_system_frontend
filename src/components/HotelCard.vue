@@ -1,25 +1,25 @@
 <template>
   <div class="hotel-card" @click="goToDetail">
     <div class="hotel-image">
-      <img :src="hotel.coverImage || '/api/image/default-hotel'" alt="酒店图片" />
-      <div v-if="hotel.tag" class="hotel-tag">{{ hotel.tag }}</div>
+      <img :src="imageUrl" alt="酒店图片" @error="handleImageError" />
+      <div v-if="tagText" class="hotel-tag">{{ tagText }}</div>
     </div>
     <div class="hotel-info">
-      <h3 class="hotel-name">{{ hotel.hotelName }}</h3>
+      <h3 class="hotel-name">{{ hotelName }}</h3>
       <p class="hotel-address">{{ hotel.address }}</p>
       <div class="hotel-score">
         <span class="score">{{ hotel.score || 4.5 }}</span>
         <span class="score-label">超棒</span>
-        <span class="review-count">{{ hotel.reviewCount || 0 }}条点评</span>
+        <span class="review-count">{{ hotel.commentCount || hotel.reviewCount || 0 }}条点评</span>
       </div>
       <div class="hotel-facilities">
-        <span v-for="facility in hotel.facilities" :key="facility" class="facility-tag">{{ facility }}</span>
+        <span v-for="facility in displayFacilities" :key="facility" class="facility-tag">{{ facility }}</span>
       </div>
     </div>
     <div class="hotel-price">
       <div class="price-info">
         <span class="price-symbol">¥</span>
-        <span class="price">{{ hotel.minPrice || 0 }}</span>
+        <span class="price">{{ minPrice }}</span>
         <span class="price-unit">起/晚</span>
       </div>
       <button class="book-btn">查看详情</button>
@@ -28,7 +28,9 @@
 </template>
 
 <script setup name="HotelCard">
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   hotel: {
     type: Object,
     required: true
@@ -36,6 +38,44 @@ defineProps({
 })
 
 const emit = defineEmits(['click'])
+
+// 酒店名称 - 兼容不同字段名
+const hotelName = computed(() => {
+  return props.hotel.hotelName || props.hotel.name || '未知酒店'
+})
+
+// 图片URL - 兼容不同字段名
+const imageUrl = computed(() => {
+  const img = props.hotel.coverImage || props.hotel.image || props.hotel.img || props.hotel.pic
+  return img || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop'
+})
+
+// 标签文本
+const tagText = computed(() => {
+  return props.hotel.tag || props.hotel.tagName || ''
+})
+
+// 最低价格 - 兼容不同字段名
+const minPrice = computed(() => {
+  return props.hotel.minPrice || props.hotel.lowestPrice || props.hotel.price || 0
+})
+
+// 设施列表 - 处理字符串或数组
+const displayFacilities = computed(() => {
+  const facilities = props.hotel.facilities
+  if (Array.isArray(facilities)) {
+    return facilities.slice(0, 4)
+  }
+  if (typeof facilities === 'string' && facilities) {
+    return facilities.split(',').slice(0, 4)
+  }
+  return []
+})
+
+// 图片加载失败处理
+function handleImageError(e) {
+  e.target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop'
+}
 
 function goToDetail() {
   emit('click')

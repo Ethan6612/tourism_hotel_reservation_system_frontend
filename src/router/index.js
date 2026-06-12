@@ -48,6 +48,20 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/search',
+    component: () => import('@/views/front/search'),
+    hidden: true,
+    name: 'HotelSearch',
+    meta: { title: '酒店搜索' }
+  },
+  {
+    path: '/hotel/:id',
+    component: () => import('@/views/front/hotelDetail'),
+    hidden: true,
+    name: 'HotelDetail',
+    meta: { title: '酒店详情' }
+  },
+  {
     path: '/login',
     component: () => import('@/views/login'),
     hidden: true
