@@ -8,8 +8,8 @@
           <span class="logo-text">ZSC酒店预订</span>
         </div>
         <nav class="nav">
-          <a href="#" class="nav-item active">首页</a>
-          <a href="#" class="nav-item">酒店</a>
+          <a href="/index" class="nav-item active">首页</a>
+          <a href="/search" class="nav-item">酒店</a>
           <a href="#" class="nav-item">攻略</a>
           <a href="#" class="nav-item">关于我们</a>
         </nav>
@@ -379,11 +379,29 @@ const mockHotels = [
 function handleSearch() {
   console.log('搜索条件:', searchForm.value)
   // 跳转到搜索结果页面
+  router.push({
+    path: '/search',
+    query: {
+      keyword: searchForm.value.destination,
+      checkIn: searchForm.value.checkIn,
+      checkOut: searchForm.value.checkOut,
+      guests: searchForm.value.guests
+    }
+  })
 }
 
 function searchByCity(cityName) {
   searchForm.value.destination = cityName
-  console.log('搜索城市:', cityName)
+  // 直接跳转到搜索结果页
+  router.push({
+    path: '/search',
+    query: {
+      keyword: cityName,
+      checkIn: searchForm.value.checkIn,
+      checkOut: searchForm.value.checkOut,
+      guests: searchForm.value.guests
+    }
+  })
 }
 
 function goToHotelDetail(hotelId) {

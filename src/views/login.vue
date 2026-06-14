@@ -329,7 +329,7 @@ function handleLogin() {
             if (isAdmin) {
               router.push({ path: redirect.value || "/dashboard", query: otherQueryParams })
             } else {
-              router.push({ path: redirect.value || "/index", query: otherQueryParams })
+              router.push({ path: redirect.value || "/home", query: otherQueryParams })
             }
           })
         }).catch(() => {
@@ -342,7 +342,7 @@ function handleLogin() {
         return userStore.getInfo()
       }).then((userInfo) => {
         // 所有用户登录后都跳转到首页
-        router.push('/index')
+        router.push('/home')
       }).catch(() => {
         loading.value = false
         if (captchaEnabled.value) {
@@ -405,6 +405,7 @@ function handleRegister() {
     registerLoading.value = true
     const data = {
       email: registerForm.value.email,
+      emailCode: registerForm.value.emailCode,
       password: passwordForm.value.password,
       nickName: registerForm.value.nickName,
       userType: registerForm.value.userType
@@ -415,7 +416,12 @@ function handleRegister() {
       sessionStorage.removeItem('isVisitor')
       setToken(res.token)
       userStore.token = res.token
-      navigateAfterAuth()
+      // 获取用户信息和角色，然后根据角色跳转
+      userStore.getInfo().then(() => {
+        usePermissionStore().generateRoutes().then(() => {
+          navigateAfterAuth()
+        })
+      })
     }).catch(() => {
       registerLoading.value = false
     })
@@ -441,7 +447,13 @@ function navigateAfterAuth() {
     }
     return acc
   }, {})
-  router.push({ path: redirect.value || "/", query: otherQueryParams })
+  // 根据角色跳转：管理员→dashboard，普通用户/商户→首页
+  const isAdmin = userStore.roles && userStore.roles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
+  if (isAdmin) {
+    router.push({ path: redirect.value || "/dashboard", query: otherQueryParams })
+  } else {
+    router.push({ path: redirect.value || "/home", query: otherQueryParams })
+  }
 }
 
 function getCode() {
