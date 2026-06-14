@@ -265,7 +265,8 @@ const isMerchant = computed(() => {
 function handleUserCommand(command) {
   switch (command) {
     case 'merchant':
-      router.push('/biz/merchant')
+      // ✅ 商户用户点击"我的商户"，跳转到评价管理页面
+      router.push('/biz/comment')
       break
     case 'console':
       router.push('/dashboard')

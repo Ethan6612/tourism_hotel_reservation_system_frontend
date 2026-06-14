@@ -109,13 +109,21 @@ export const constantRoutes = [
         path: 'merchant',
         component: () => import('@/views/biz/merchant/index'),
         name: 'Merchant',
-        meta: { title: '商户管理', icon: 'peoples' }
+        meta: { 
+          title: '商户管理', 
+          icon: 'peoples',
+          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
+        }
       },
       {
         path: 'merchantAudit',
         component: () => import('@/views/biz/merchant/audit'),
         name: 'MerchantAudit',
-        meta: { title: '商户审核', icon: 'checkbox' }
+        meta: { 
+          title: '商户审核', 
+          icon: 'checkbox',
+          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
+        }
       },
       {
         path: 'comment',

@@ -115,3 +115,11 @@ export function processMerchantAudit(data) {
     data: data
   })
 }
+
+// 查询当前用户的商户信息（根据userId）
+export function getMyMerchant() {
+  return request({
+    url: '/api/merchant/my',
+    method: 'get'
+  })
+}

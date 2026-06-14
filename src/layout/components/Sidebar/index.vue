@@ -37,13 +37,28 @@ const appStore = useAppStore()
 const settingsStore = useSettingsStore()
 const permissionStore = usePermissionStore()
 
-const sidebarRouters = computed(() => permissionStore.sidebarRouters)
+const sidebarRouters = computed(() => {
+  const routes = permissionStore.sidebarRouters
+  
+  // 查找业务管理菜单
+  const bizRoute = routes.find(r => r.path === '/biz')
+  if (bizRoute) {
+    
+    if (bizRoute.children) {
+      bizRoute.children.forEach(child => {
+      })
+    }
+  }
+  
+  
+  return routes
+})
 const showLogo = computed(() => settingsStore.sidebarLogo)
 const sideTheme = computed(() => settingsStore.sideTheme)
 const theme = computed(() => settingsStore.theme)
 const isCollapse = computed(() => !appStore.sidebar.opened)
 
-// 获取菜单背景色
+// 获取菜单背景�?
 const getMenuBackground = computed(() => {
   if (settingsStore.isDark) {
     return 'var(--sidebar-bg)'

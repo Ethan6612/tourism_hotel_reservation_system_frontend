@@ -179,6 +179,7 @@
 
 <script setup name="Comment">
 import { listComment, getComment, replyComment, delComment, getScoreStatistics } from "@/api/biz/comment"
+import { getToken } from '@/utils/auth'
 
 const { proxy } = getCurrentInstance()
 
@@ -195,6 +196,7 @@ const queryParams = ref({
   pageSize: 10,
   hotelId: undefined,
   roomId: undefined
+  // status: '1'  // ✅ 暂时注释掉，等待后端添加 status 字段后再启用
 })
 
 const viewForm = ref({})
@@ -221,9 +223,23 @@ function getList(paginationParams) {
     queryParams.value.pageSize = paginationParams.limit
   }
   loading.value = true
+  
   listComment(queryParams.value).then(response => {
-    commentList.value = response.data.list
-    total.value = response.data.total
+    
+    if (response.data) {
+      
+      commentList.value = response.data.rows || []
+      total.value = response.data.total || 0
+      
+      if (commentList.value.length > 0) {
+      }
+    } else {
+      proxy.$modal.msgError('服务器返回数据异常')
+    }
+    
+    loading.value = false
+  }).catch(error => {
+    proxy.$modal.msgError('查询评价列表失败: ' + (error.message || '未知错误'))
     loading.value = false
   })
 }

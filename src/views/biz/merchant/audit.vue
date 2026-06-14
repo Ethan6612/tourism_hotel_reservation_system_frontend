@@ -45,6 +45,11 @@
       <el-table-column label="审核ID" align="center" prop="id" width="80" />
       <el-table-column label="商户ID" align="center" prop="merchantId" width="80" />
       <el-table-column label="商户名称" align="center" prop="merchantName" :show-overflow-tooltip="true" />
+      <el-table-column label="申请用户" align="center" prop="submitUserName" width="120" :show-overflow-tooltip="true">
+        <template #default="scope">
+          <span>{{ scope.row.submitUserName || '未知' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="审核类型" align="center" prop="auditType" width="100">
         <template #default="scope">
           <el-tag :type="getAuditTypeTag(scope.row.auditType)">
@@ -109,6 +114,9 @@
         <el-descriptions-item label="审核ID">{{ viewForm.id }}</el-descriptions-item>
         <el-descriptions-item label="商户ID">{{ viewForm.merchantId }}</el-descriptions-item>
         <el-descriptions-item label="商户名称">{{ viewForm.merchantName }}</el-descriptions-item>
+        <el-descriptions-item label="申请用户">
+          {{ viewForm.submitUserName || '未知' }}
+        </el-descriptions-item>
         <el-descriptions-item label="审核类型">
           <el-tag :type="getAuditTypeTag(viewForm.auditType)">
             {{ getAuditTypeLabel(viewForm.auditType) }}

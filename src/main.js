@@ -46,6 +46,11 @@ import DictTag from '@/components/DictTag'
 
 const app = createApp(App)
 
+// 配置编译器选项，排除自定义元素警告
+app.config.compilerOptions.isCustomElement = (tag) => {
+  return tag.startsWith('ruo-yi-')
+}
+
 // 全局方法挂载
 app.config.globalProperties.useDict = useDict
 app.config.globalProperties.download = download

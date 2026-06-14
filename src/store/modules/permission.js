@@ -4,9 +4,61 @@ import { getRouters } from '@/api/menu'
 import Layout from '@/layout/index'
 import ParentView from '@/components/ParentView'
 import InnerLink from '@/layout/components/InnerLink'
+import useUserStore from '@/store/modules/user'
+import { h } from 'vue'
 
-// 匹配views里面所有的.vue文件
-const modules = import.meta.glob('./../../views/**/*.vue')
+// 匹配views里面所有的.vue文件 - 使用绝对路径模式
+const modules = import.meta.glob('/src/views/**/*.vue')
+
+// 动态加载视图组件
+function loadView(view) {
+  // view格式如: 'biz/merchant/index' 或 'system/user/index'
+  // 转换为绝对路径: '/src/views/biz/merchant/index.vue'
+  const path = `/src/views/${view}.vue`
+  
+  // 从 modules 中查找匹配的组件
+  if (modules[path]) {
+    if (import.meta.env.DEV) {
+      
+    }
+    return modules[path]
+  }
+  
+  // 如果找不到，尝试其他可能的路径格式
+  if (import.meta.env.DEV) {
+
+  }
+  
+  // 尝试不带 .vue 后缀的路径（某些情况下可能需要）
+  const altPath = `/src/views/${view}`
+  if (modules[altPath]) {
+    if (import.meta.env.DEV) {
+
+    }
+    return modules[altPath]
+  }
+  
+  // 尝试相对路径格式（作为最后的备选）
+  const relPath = `./../../views/${view}.vue`
+  if (modules[relPath]) {
+    if (import.meta.env.DEV) {
+
+    }
+    return modules[relPath]
+  }
+  
+  if (import.meta.env.DEV) {
+
+  }
+  
+  // 如果都找不到，返回一个错误提示组件
+  return () => Promise.resolve({
+    render() {
+      return h('div', { style: { padding: '20px', color: 'red' } }, 
+        `组件加载失败: ${view}`)
+    }
+  })
+}
 
 const usePermissionStore = defineStore(
   'permission',
@@ -30,6 +82,24 @@ const usePermissionStore = defineStore(
         this.topbarRouters = routes
       },
       setSidebarRouters(routes) {
+        // 🔒 保护逻辑：如果当前已经有过滤后的路由，检查新路由是否包含被过滤掉的菜单
+        if (this.sidebarRouters && this.sidebarRouters.length > 0) {
+          // 查找业务管理菜单
+          const currentBizRoute = this.sidebarRouters.find(r => r.path === '/biz')
+          const newBizRoute = routes.find(r => r.path === '/biz')
+          
+          if (currentBizRoute && newBizRoute && currentBizRoute.children && newBizRoute.children) {
+            // 比较子菜单数量
+            const currentCount = currentBizRoute.children.length
+            const newCount = newBizRoute.children.length
+            
+            // 如果新路由的子菜单更多，说明可能是未过滤的全量路由，拒绝覆盖
+            if (newCount > currentCount) {
+              return // 拒绝更新
+            }
+          }
+        }
+        
         this.sidebarRouters = routes
       },
       // 清除路由
@@ -59,9 +129,16 @@ const usePermissionStore = defineStore(
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
             this.setRoutes(rewriteRoutes)
-            this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
+            
+            // 过滤constantRoutes中带有roles限制的路由
+            const filteredConstantRoutes = filterConstantRoutesByRole(constantRoutes)
+            
+            const finalSidebarRoutes = filteredConstantRoutes.concat(sidebarRoutes)
+            
+            this.setSidebarRouters(finalSidebarRoutes)
             this.setDefaultRoutes(sidebarRoutes)
             this.setTopbarRoutes(defaultRoutes)
+            
             resolve(rewriteRoutes)
           })
         })
@@ -130,15 +207,39 @@ export function filterDynamicRoutes(routes) {
   return res
 }
 
-export const loadView = (view) => {
-  let res
-  for (const path in modules) {
-    const dir = path.split('views/')[1].split('.vue')[0]
-    if (dir === view) {
-      res = () => modules[path]()
+// 过滤constantRoutes中带有roles限制的路由
+function filterConstantRoutesByRole(routes, parentRoles = null) {
+  const filtered = []
+  
+  routes.forEach(route => {
+    // 创建路由的副本
+    const routeCopy = { ...route }
+    
+    // 如果路由有roles限制，检查当前用户是否有权限
+    if (routeCopy.meta && routeCopy.meta.roles) {
+      const requiredRoles = routeCopy.meta.roles
+      const hasPermission = auth.hasRoleOr(requiredRoles)
+      
+      if (!hasPermission) {
+        // 用户没有权限，跳过此路由
+        return
+      }
     }
-  }
-  return res
+    
+    // 如果有子路由，递归过滤
+    if (routeCopy.children && routeCopy.children.length > 0) {
+      routeCopy.children = filterConstantRoutesByRole(routeCopy.children, routeCopy.meta?.roles)
+      
+      // 如果过滤后没有子路由，且父路由也没有component，则跳过父路由
+      if (routeCopy.children.length === 0 && !routeCopy.component) {
+        return
+      }
+    }
+    
+    filtered.push(routeCopy)
+  })
+  
+  return filtered
 }
 
 export default usePermissionStore

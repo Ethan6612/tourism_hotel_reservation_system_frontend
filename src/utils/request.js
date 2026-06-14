@@ -28,8 +28,12 @@ service.interceptors.request.use(config => {
   const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
   // 间隔时间(ms)，小于此时间视为重复提交
   const interval = (config.headers || {}).interval || 1000
-  if (getToken() && !isToken) {
-    config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
+  const token = getToken()
+  if (token && !isToken) {
+    config.headers['Authorization'] = 'Bearer ' + token // 让每个请求携带自定义token 请根据实际情况自行修改
+    console.log('Request URL:', config.url, 'Token:', token.substring(0, 20) + '...')
+  } else if (!token && !isToken) {
+    console.warn('Request URL:', config.url, 'Warning: No token found!')
   }
   // get请求映射params参数
   if (config.method === 'get' && config.params) {

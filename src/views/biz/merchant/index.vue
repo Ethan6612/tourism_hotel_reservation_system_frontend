@@ -237,25 +237,125 @@
 </template>
 
 <script setup name="Merchant">
-import { listMerchant, getMerchant, delMerchant, addMerchant, updateMerchant, freezeMerchant, unfreezeMerchant, deregisterMerchant } from "@/api/biz/merchant"
+
+import { listMerchant, getMerchant, delMerchant, addMerchant, updateMerchant, freezeMerchant, unfreezeMerchant, deregisterMerchant, getMyMerchant } from "@/api/biz/merchant"
 import { useRouter } from 'vue-router'
 import useUserStore from '@/store/modules/user'
+import { ref, getCurrentInstance, onMounted } from 'vue'
 
 const { proxy } = getCurrentInstance()
 const router = useRouter()
 const userStore = useUserStore()
 
 // 检查商户用户是否完成登记
-function checkMerchantRegistration() {
+async function checkMerchantRegistration() {
+  
   const userRoles = userStore.roles
+  
+  // ✅ 获取当前登录用户的ID
+  const currentUserId = userStore.id || userStore.userId
+  
   const isMerchant = userRoles && userRoles.some(role => 
     role === 'merchant' || role === 'ROLE_MERCHANT'
   )
   
-  if (isMerchant) {
-    const merchantRegistered = localStorage.getItem('merchantRegistered')
-    if (!merchantRegistered) {
-      // 未完成登记，跳转到登记页面
+  if (!isMerchant) {
+    return true // 非商户用户直接返回true
+  }
+  
+  try {
+    const response = await getMyMerchant()
+    
+    if (response.code === 200 && response.data) {
+      
+      // ✅ 关键安全检查：验证商户归属
+      if (currentUserId && response.data.userId !== currentUserId) {
+        // 视为未登记，要求重新注册
+        proxy.$modal.confirm('您还未完成商户信息登记，请先完善商户信息', '提示', {
+          confirmButtonText: '去登记',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          router.push('/merchant/register')
+        }).catch(() => {
+          router.back()
+        })
+        return false
+      }
+      
+      const auditStatus = response.data.auditStatus
+      
+      // 根据审核状态显示不同提示
+      if (auditStatus === '0' || auditStatus === 0) {
+        // 待审核
+        proxy.$modal.alert('您的商户信息正在审核中，请耐心等待', '审核状态', {
+          type: 'info'
+        })
+        return false // 阻止加载列表
+      } else if (auditStatus === '2' || auditStatus === 2) {
+        // 审核驳回
+        proxy.$modal.confirm(`您的商户信息审核未通过\n驳回原因：${response.data.rejectReason || '未知'}\n\n是否重新提交？`, '审核驳回', {
+          confirmButtonText: '去修改',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          router.push('/merchant/register')
+        })
+        return false // 阻止加载列表
+      } else if (auditStatus === '1' || auditStatus === 1) {
+        // 审核通过
+        localStorage.setItem('merchantRegistered', 'true')
+        return true
+      } else {
+        // 未知状态
+        return false
+      }
+    } else {
+      // 没有找到商户信息
+      
+      // ✅ 容错处理：尝试从列表查询，但必须验证 userId 匹配
+      try {
+        const listResponse = await listMerchant({
+          pageNum: 1,
+          pageSize: 10, // 获取更多数据以便筛选
+        })
+        
+        if (listResponse.data && listResponse.data.list && listResponse.data.list.length > 0) {
+          // ✅ 关键：查找属于当前用户的商户
+          const myMerchant = listResponse.data.list.find(
+            merchant => merchant.userId === currentUserId
+          )
+          
+          if (myMerchant) {
+            // 使用找到的商户信息继续判断
+            const auditStatus = myMerchant.auditStatus || '0'
+            
+            if (auditStatus === '0' || auditStatus === 0) {
+              proxy.$modal.alert('您的商户信息正在审核中，请耐心等待', '审核状态', {
+                type: 'info'
+              })
+              return false
+            } else if (auditStatus === '2' || auditStatus === 2) {
+              proxy.$modal.confirm(`您的商户信息审核未通过\n驳回原因：${myMerchant.rejectReason || '未知'}\n\n是否重新提交？`, '审核驳回', {
+                confirmButtonText: '去修改',
+                cancelButtonText: '取消',
+                type: 'warning'
+              }).then(() => {
+                router.push('/merchant/register')
+              })
+              return false
+            } else if (auditStatus === '1' || auditStatus === 1) {
+              localStorage.setItem('merchantRegistered', 'true')
+              return true
+            }
+          } else {
+          }
+        } else {
+        }
+      } catch (listError) {
+      }
+      
+      // 如果所有方式都确认没有商户信息，提示去登记
       proxy.$modal.confirm('您还未完成商户信息登记，请先完善商户信息', '提示', {
         confirmButtonText: '去登记',
         cancelButtonText: '取消',
@@ -263,22 +363,28 @@ function checkMerchantRegistration() {
       }).then(() => {
         router.push('/merchant/register')
       }).catch(() => {
-        // 用户取消，返回上一页
         router.back()
       })
       return false
     }
+  } catch (error) {
+    // API调用失败时，使用备用逻辑
+    const merchantRegistered = localStorage.getItem('merchantRegistered')
+    if (!merchantRegistered) {
+      proxy.$modal.confirm('您还未完成商户信息登记，请先完善商户信息', '提示', {
+        confirmButtonText: '去登记',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        router.push('/merchant/register')
+      }).catch(() => {
+        router.back()
+      })
+      return false
+    }
+    return true
   }
-  return true
 }
-
-// 页面加载时检查
-onMounted(() => {
-  if (!checkMerchantRegistration()) {
-    return
-  }
-  getList(null)
-})
 
 const merchantList = ref([])
 const open = ref(false)
@@ -476,4 +582,14 @@ function handleDelete(row) {
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
 }
+
+// ✅ 页面加载时检查商户注册状态并加载列表
+onMounted(async () => {
+  
+  try {
+    // 路由守卫已经检查过审核状态，这里直接加载列表
+    getList(null)
+  } catch (error) {
+  }
+})
 </script>
