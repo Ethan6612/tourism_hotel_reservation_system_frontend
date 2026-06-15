@@ -407,6 +407,7 @@ function searchByCity(cityName) {
 function goToHotelDetail(hotelId) {
   console.log('查看酒店详情:', hotelId)
   // 跳转到酒店详情页
+  router.push(`/hotel/${hotelId}`)
 }
 
 onMounted(() => {

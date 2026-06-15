@@ -9,7 +9,7 @@
         </div>
         <nav class="nav">
           <a href="/index" class="nav-item">首页</a>
-          <a href="/search" class="nav-item">酒店</a>
+          <a href="/search" class="nav-item active">酒店</a>
           <a href="#" class="nav-item">攻略</a>
           <a href="#" class="nav-item">关于我们</a>
         </nav>
@@ -38,136 +38,270 @@
       </div>
     </header>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-state">
-      <el-icon class="loading-icon"><Loading /></el-icon>
-      <span>正在加载酒店信息...</span>
+    <!-- 面包屑导航 -->
+    <div class="breadcrumb-section">
+      <div class="container">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item><a href="/index">首页</a></el-breadcrumb-item>
+          <el-breadcrumb-item><a href="/search">酒店搜索</a></el-breadcrumb-item>
+          <el-breadcrumb-item>{{ hotel.hotelName }}</el-breadcrumb-item>
+        </el-breadcrumb>
+      </div>
     </div>
 
-    <!-- 酒店详情内容 -->
-    <div v-else-if="hotel" class="detail-content">
-      <!-- 面包屑导航 -->
-      <div class="breadcrumb-section">
-        <div class="container">
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item><a href="/index">首页</a></el-breadcrumb-item>
-            <el-breadcrumb-item><a href="/search">酒店搜索</a></el-breadcrumb-item>
-            <el-breadcrumb-item>{{ hotel.hotelName }}</el-breadcrumb-item>
-          </el-breadcrumb>
+    <!-- 酒店图片轮播 -->
+    <section class="gallery-section">
+      <div class="container">
+        <div class="gallery">
+          <div class="main-image">
+            <img :src="currentImage" alt="酒店主图" />
+            <div class="image-nav">
+              <button class="nav-btn prev" @click="prevImage">‹</button>
+              <button class="nav-btn next" @click="nextImage">›</button>
+            </div>
+            <div class="image-counter">{{ currentImageIndex + 1 }} / {{ hotel.images.length }}</div>
+          </div>
+          <div class="thumbnail-list">
+            <img
+              v-for="(img, index) in hotel.images"
+              :key="index"
+              :src="img"
+              :class="['thumbnail', { active: currentImageIndex === index }]"
+              @click="currentImageIndex = index"
+              alt="酒店缩略图"
+            />
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- 酒店主要信息 -->
-      <section class="hotel-main">
-        <div class="container">
-          <div class="hotel-gallery">
-            <div class="main-image">
-              <img :src="hotel.coverImage" alt="酒店主图" @error="handleImageError($event)" />
-            </div>
-            <div class="sub-images">
-              <img v-for="(img, index) in hotel.images" :key="index" :src="img" alt="酒店图片" @error="handleSubImageError($event)" />
-            </div>
-          </div>
-          <div class="hotel-info-card">
+    <!-- 酒店主要信息 -->
+    <section class="hotel-main">
+      <div class="container">
+        <div class="main-content">
+          <!-- 左侧信息 -->
+          <div class="hotel-info">
             <div class="hotel-header">
               <h1 class="hotel-name">{{ hotel.hotelName }}</h1>
               <div class="hotel-tags">
-                <span v-if="hotel.tag" class="tag">{{ hotel.tag }}</span>
-                <span class="star-tag">{{ '★'.repeat(hotel.star || 0) }}{{ '☆'.repeat(5 - (hotel.star || 0)) }}</span>
+                <span class="tag star-tag">{{ '★'.repeat(hotel.star) }}{{ '☆'.repeat(5 - hotel.star) }}</span>
+                <span class="tag type-tag">{{ hotel.type }}</span>
               </div>
             </div>
             <div class="hotel-score">
-              <span class="score">{{ hotel.score || 4.5 }}</span>
-              <span class="score-label">超棒</span>
-              <span class="review-count">{{ hotel.reviewCount || 0 }}条点评</span>
+              <span class="score">{{ hotel.score }}</span>
+              <span class="score-label">{{ hotel.scoreLabel }}</span>
+              <span class="review-count">{{ hotel.reviewCount }}条点评</span>
             </div>
             <div class="hotel-address">
-              <span class="address-icon">📍</span>
+              <span class="icon">📍</span>
               <span>{{ hotel.address }}</span>
             </div>
-            <div class="hotel-facilities">
-              <span v-for="facility in hotel.facilities" :key="facility" class="facility-tag">{{ facility }}</span>
+            <div class="hotel-phone">
+              <span class="icon">📞</span>
+              <span>{{ hotel.phone }}</span>
             </div>
-            <div class="hotel-description">
+            <div class="hotel-intro">
               <h3>酒店简介</h3>
-              <p>{{ hotel.description || '暂无简介' }}</p>
+              <p>{{ hotel.intro }}</p>
+            </div>
+          </div>
+
+          <!-- 右侧预订卡片 -->
+          <div class="booking-card">
+            <div class="price-section">
+              <span class="price-label">起</span>
+              <span class="price-symbol">¥</span>
+              <span class="price">{{ hotel.minPrice }}</span>
+              <span class="price-unit">/晚</span>
+            </div>
+            <div class="booking-dates">
+              <div class="date-item">
+                <label>入住日期</label>
+                <input type="date" v-model="booking.checkIn" />
+              </div>
+              <div class="date-item">
+                <label>退房日期</label>
+                <input type="date" v-model="booking.checkOut" />
+              </div>
+            </div>
+            <div class="booking-guests">
+              <label>入住人数</label>
+              <select v-model="booking.guests">
+                <option value="1">1人</option>
+                <option value="2">2人</option>
+                <option value="3">3人</option>
+                <option value="4">4人</option>
+              </select>
+            </div>
+            <button class="book-btn" @click="handleBook">立即预订</button>
+            <p class="booking-tip">预订即表示同意《服务协议》</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设施服务 -->
+    <section class="facilities-section">
+      <div class="container">
+        <h2 class="section-title">设施服务</h2>
+        <div class="facilities-grid">
+          <div v-for="facility in hotel.facilities" :key="facility.name" class="facility-item">
+            <span class="facility-icon">{{ facility.icon }}</span>
+            <div class="facility-info">
+              <span class="facility-name">{{ facility.name }}</span>
+              <span class="facility-desc">{{ facility.description }}</span>
             </div>
           </div>
         </div>
-      </section>
+        <div class="service-tags">
+          <div class="service-item">
+            <span class="service-label">🅿️ 停车信息</span>
+            <span class="service-value">{{ hotel.parkingInfo }}</span>
+          </div>
+          <div class="service-item">
+            <span class="service-label">📶 WiFi信息</span>
+            <span class="service-value">{{ hotel.wifiInfo }}</span>
+          </div>
+          <div class="service-item">
+            <span class="service-label">🍳 早餐信息</span>
+            <span class="service-value">{{ hotel.breakfastInfo }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <!-- 房型列表 -->
-      <section class="room-section">
-        <div class="container">
-          <h2 class="section-title">房型与价格</h2>
-          <div class="room-list">
-            <div v-for="room in rooms" :key="room.id" class="room-card">
-              <div class="room-image">
-                <img :src="room.coverImage" alt="房型图片" @error="handleRoomImageError($event)" />
-              </div>
-              <div class="room-info">
-                <h3 class="room-name">{{ room.roomName }}</h3>
-                <p class="room-type">{{ room.roomType }}</p>
-                <div class="room-features">
-                  <span v-for="feature in room.features" :key="feature" class="feature-tag">{{ feature }}</span>
-                </div>
-                <p class="room-bed">床型：{{ room.bedType }}</p>
-                <p class="room-area">面积：{{ room.area }}㎡</p>
-              </div>
-              <div class="room-price">
-                <div class="price-info">
-                  <span class="price-symbol">¥</span>
-                  <span class="price">{{ room.price }}</span>
-                  <span class="price-unit">/晚</span>
-                </div>
-                <button class="book-btn" @click="handleBookRoom(room)">预订</button>
-              </div>
+    <!-- 入住政策 -->
+    <section class="policy-section">
+      <div class="container">
+        <h2 class="section-title">入住政策</h2>
+        <div class="policy-grid">
+          <div class="policy-card">
+            <div class="policy-icon">🕐</div>
+            <h4>入住/退房时间</h4>
+            <p>入住时间：{{ hotel.checkInTime }}</p>
+            <p>退房时间：{{ hotel.checkOutTime }}</p>
+          </div>
+          <div class="policy-card">
+            <div class="policy-icon">🚫</div>
+            <h4>取消政策</h4>
+            <p>{{ hotel.cancellationPolicy }}</p>
+          </div>
+          <div class="policy-card">
+            <div class="policy-icon">👶</div>
+            <h4>儿童政策</h4>
+            <p>{{ hotel.childPolicy }}</p>
+          </div>
+          <div class="policy-card">
+            <div class="policy-icon">🐾</div>
+            <h4>宠物政策</h4>
+            <p>{{ hotel.petPolicy }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 入住须知 -->
+    <section class="rules-section">
+      <div class="container">
+        <h2 class="section-title">入住须知</h2>
+        <div class="rules-content">
+          <p v-for="(rule, index) in hotel.rules" :key="index">{{ rule }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 周边信息 -->
+    <section class="surrounding-section">
+      <div class="container">
+        <h2 class="section-title">周边信息</h2>
+        <div class="surrounding-grid">
+          <div v-for="item in hotel.surroundingInfo" :key="item.name" class="surrounding-item">
+            <span class="surrounding-icon">{{ item.icon }}</span>
+            <div class="surrounding-info">
+              <span class="surrounding-name">{{ item.name }}</span>
+              <span class="surrounding-distance">{{ item.distance }}</span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- 用户评价 -->
-      <section class="review-section">
-        <div class="container">
-          <h2 class="section-title">用户评价</h2>
-          <div v-if="reviews.length > 0" class="review-list">
-            <div v-for="review in reviews" :key="review.id" class="review-item">
-              <div class="review-header">
-                <div class="reviewer-info">
-                  <span class="reviewer-avatar">{{ review.userName?.charAt(0) || '用' }}</span>
-                  <div class="reviewer-details">
-                    <span class="reviewer-name">{{ review.userName || '匿名用户' }}</span>
-                    <span class="review-time">{{ review.createTime }}</span>
-                  </div>
-                </div>
-                <div class="review-score">
-                  <span class="score">{{ review.score }}</span>
-                  <span class="score-text">分</span>
-                </div>
+    <!-- 房型列表 -->
+    <section class="room-section">
+      <div class="container">
+        <h2 class="section-title">房型与价格</h2>
+        <div class="room-list">
+          <div v-for="room in rooms" :key="room.id" class="room-card">
+            <div class="room-image">
+              <img :src="room.image" alt="房型图片" />
+            </div>
+            <div class="room-info">
+              <h3 class="room-name">{{ room.name }}</h3>
+              <p class="room-type">{{ room.type }}</p>
+              <div class="room-features">
+                <span v-for="feature in room.features" :key="feature" class="feature-tag">{{ feature }}</span>
               </div>
-              <p class="review-content">{{ review.content }}</p>
-              <div v-if="review.replyContent" class="review-reply">
-                <span class="reply-label">商家回复：</span>
-                <span class="reply-content">{{ review.replyContent }}</span>
+              <p class="room-bed">🛏️ 床型：{{ room.bedType }}</p>
+              <p class="room-area">📐 面积：{{ room.area }}㎡</p>
+              <p class="room-max">👥 最多入住：{{ room.maxGuests }}人</p>
+            </div>
+            <div class="room-price">
+              <div class="price-info">
+                <span class="price-symbol">¥</span>
+                <span class="price">{{ room.price }}</span>
+                <span class="price-unit">/晚</span>
               </div>
+              <button class="book-btn" @click="handleBookRoom(room)">预订</button>
             </div>
           </div>
-          <div v-else class="empty-review">
-            <span class="empty-icon">💬</span>
-            <p>暂无评价</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 用户评价 -->
+    <section class="review-section">
+      <div class="container">
+        <h2 class="section-title">用户评价</h2>
+        <div class="review-summary">
+          <div class="summary-score">
+            <span class="big-score">{{ hotel.score }}</span>
+            <span class="score-label">超棒</span>
+          </div>
+          <div class="summary-bars">
+            <div v-for="item in ratingDistribution" :key="item.label" class="bar-item">
+              <span class="bar-label">{{ item.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" :style="{ width: item.percentage + '%' }"></div>
+              </div>
+              <span class="bar-count">{{ item.count }}</span>
+            </div>
           </div>
         </div>
-      </section>
-    </div>
-
-    <!-- 错误状态 -->
-    <div v-else class="error-state">
-      <span class="error-icon">😕</span>
-      <h3>酒店信息加载失败</h3>
-      <p>请稍后重试或返回首页</p>
-      <button class="back-btn" @click="goToHome">返回首页</button>
-    </div>
+        <div class="review-list">
+          <div v-for="review in reviews" :key="review.id" class="review-item">
+            <div class="review-header">
+              <div class="reviewer-info">
+                <span class="reviewer-avatar">{{ review.userName.charAt(0) }}</span>
+                <div class="reviewer-details">
+                  <span class="reviewer-name">{{ review.userName }}</span>
+                  <span class="review-time">{{ review.time }}</span>
+                </div>
+              </div>
+              <div class="review-score">
+                <span class="score">{{ review.score }}</span>
+                <span class="score-text">分</span>
+              </div>
+            </div>
+            <p class="review-content">{{ review.content }}</p>
+            <div v-if="review.reply" class="review-reply">
+              <span class="reply-label">商家回复：</span>
+              <span class="reply-content">{{ review.reply }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- 页脚 -->
     <footer class="footer">
@@ -213,8 +347,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowDown, Loading } from '@element-plus/icons-vue'
-import { getHotelDetail, getHotelRooms } from '@/api/front/hotel'
+import { ArrowDown } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 
@@ -222,11 +355,182 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-// 数据状态
-const hotel = ref(null)
-const rooms = ref([])
-const reviews = ref([])
-const loading = ref(true)
+// 图片轮播
+const currentImageIndex = ref(0)
+
+// 预订信息
+const booking = ref({
+  checkIn: '',
+  checkOut: '',
+  guests: '2'
+})
+
+// 酒店假数据
+const hotel = ref({
+  id: 1,
+  hotelName: '北京希尔顿酒店',
+  star: 5,
+  type: '豪华酒店',
+  score: 4.8,
+  scoreLabel: '超棒',
+  reviewCount: 1256,
+  address: '北京市东城区王府井大街1号',
+  phone: '010-88888888',
+  intro: '北京希尔顿酒店位于北京市中心，毗邻王府井商业区，交通便利。酒店拥有豪华客房和套房，配备现代化设施，提供高品质的餐饮服务和完善的会议设施。酒店还设有健身中心、室内游泳池、SPA中心等休闲设施，是商务和休闲旅客的理想选择。',
+  minPrice: 1280,
+
+  // 图片
+  images: [
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=500&fit=crop',
+    'https://images.unsplash.com/photo-1551882547-be7b2a60087d?w=800&h=500&fit=crop',
+    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=500&fit=crop',
+    'https://images.unsplash.com/photo-1455587734955-081b22074882?w=800&h=500&fit=crop',
+    'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800&h=500&fit=crop'
+  ],
+
+  // 设施服务
+  facilities: [
+    { icon: '📶', name: '免费WiFi', description: '大堂及客房免费WiFi' },
+    { icon: '🅿️', name: '停车场', description: '地下停车场，收费50元/天' },
+    { icon: '🏊', name: '游泳池', description: '室内恒温游泳池' },
+    { icon: '💪', name: '健身房', description: '24小时健身中心' },
+    { icon: '🧖', name: 'SPA', description: '专业SPA理疗服务' },
+    { icon: '🍽️', name: '餐厅', description: '中西餐厅，自助早餐' },
+    { icon: '🍸', name: '酒吧', description: '大堂酒吧，营业至深夜' },
+    { icon: '💼', name: '商务中心', description: '提供复印、打印、传真服务' },
+    { icon: '🏊‍♂️', name: '儿童泳池', description: '儿童专用浅水泳池' },
+    { icon: '🧺', name: '洗衣服务', description: '提供洗衣和熨烫服务' },
+    { icon: '🚖', name: '接机服务', description: '提供机场接送服务（收费）' },
+    { icon: '🔐', name: '保险柜', description: '客房配备电子保险柜' }
+  ],
+  parkingInfo: '地下停车场，收费50元/天，入住客人免费',
+  wifiInfo: '全酒店覆盖免费WiFi，速度100Mbps',
+  breakfastInfo: '自助早餐 6:30-10:00，成人128元/位，儿童64元/位',
+
+  // 入住政策
+  checkInTime: '14:00',
+  checkOutTime: '12:00',
+  cancellationPolicy: '入住前24小时可免费取消，24小时内取消将收取首晚房费',
+  childPolicy: '6岁以下儿童免费入住，6-12岁儿童加床费100元/晚',
+  petPolicy: '允许携带宠物入住，需额外支付200元清洁费',
+
+  // 入住须知
+  rules: [
+    '请携带有效身份证件办理入住',
+    '入住时间为14:00后，退房时间为12:00前',
+    '酒店提供免费WiFi，请在前台获取密码',
+    '如需提前入住或延迟退房，请提前联系酒店',
+    '酒店内禁止吸烟，如需吸烟请前往指定区域',
+    '请妥善保管贵重物品，酒店不承担责任',
+    '如需特殊服务（如婴儿床、加床），请提前预约'
+  ],
+
+  // 周边信息
+  surroundingInfo: [
+    { icon: '🛍️', name: '王府井百货', distance: '步行5分钟' },
+    { icon: '🚇', name: '地铁1号线', distance: '步行3分钟' },
+    { icon: '🏛️', name: '故宫博物院', distance: '车程10分钟' },
+    { icon: '🌳', name: '天安门广场', distance: '车程8分钟' },
+    { icon: '✈️', name: '首都国际机场', distance: '车程40分钟' },
+    { icon: '🚄', name: '北京站', distance: '车程15分钟' }
+  ]
+})
+
+// 房型数据
+const rooms = ref([
+  {
+    id: 1,
+    name: '豪华大床房',
+    type: '大床房',
+    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=250&fit=crop',
+    features: ['免费WiFi', '迷你吧', '浴缸', '城市景观'],
+    bedType: '1.8米大床',
+    area: 45,
+    maxGuests: 2,
+    price: 1280
+  },
+  {
+    id: 2,
+    name: '行政双床房',
+    type: '双床房',
+    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=250&fit=crop',
+    features: ['免费WiFi', '迷你吧', '浴缸', '行政酒廊'],
+    bedType: '2张1.2米单人床',
+    area: 50,
+    maxGuests: 2,
+    price: 1580
+  },
+  {
+    id: 3,
+    name: '豪华套房',
+    type: '套房',
+    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=400&h=250&fit=crop',
+    features: ['免费WiFi', '迷你吧', '浴缸', '客厅', '城市景观'],
+    bedType: '1.8米大床',
+    area: 80,
+    maxGuests: 3,
+    price: 2880
+  },
+  {
+    id: 4,
+    name: '总统套房',
+    type: '顶级套房',
+    image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&h=250&fit=crop',
+    features: ['免费WiFi', '迷你吧', '按摩浴缸', '独立客厅', '餐厅', '全景景观'],
+    bedType: '2米特大床',
+    area: 150,
+    maxGuests: 4,
+    price: 8880
+  }
+])
+
+// 评价分布
+const ratingDistribution = ref([
+  { label: '5分', percentage: 75, count: 942 },
+  { label: '4分', percentage: 18, count: 226 },
+  { label: '3分', percentage: 5, count: 63 },
+  { label: '2分', percentage: 1, count: 13 },
+  { label: '1分', percentage: 1, count: 12 }
+])
+
+// 评价数据
+const reviews = ref([
+  {
+    id: 1,
+    userName: '张先生',
+    score: 4.9,
+    time: '2026-06-10',
+    content: '酒店位置非常好，就在王府井旁边，逛街购物很方便。房间干净整洁，设施齐全，床很舒服。早餐品种丰富，服务态度也很好。下次来北京还会选择这家酒店！',
+    reply: null
+  },
+  {
+    id: 2,
+    userName: '李女士',
+    score: 4.8,
+    time: '2026-06-08',
+    content: '带着家人来北京旅游，选择了这家酒店。酒店环境很好，房间很大，孩子很喜欢。前台服务很热情，还帮忙介绍了周边的景点和美食。唯一不足的是停车位有点紧张。',
+    reply: '尊敬的客人，感谢您的入住和好评！停车位紧张的问题我们已经反馈给相关部门，会尽快改善。期待您再次光临！'
+  },
+  {
+    id: 3,
+    userName: '王经理',
+    score: 4.7,
+    time: '2026-06-05',
+    content: '出差住的这家酒店，商务设施很完善，WiFi速度也很快。会议室设备齐全，满足了我们的会议需求。地理位置优越，离机场也比较方便。',
+    reply: null
+  },
+  {
+    id: 4,
+    userName: '陈小姐',
+    score: 4.9,
+    time: '2026-06-03',
+    content: '朋友推荐的这家酒店，果然没有失望！房间超大，窗外风景很美。SPA体验很棒，服务人员很专业。早餐也很棒，中西结合，选择很多。强烈推荐！',
+    reply: null
+  }
+])
+
+// 当前显示的图片
+const currentImage = computed(() => hotel.value.images[currentImageIndex.value])
 
 // 用户相关
 const isLoggedIn = computed(() => !!getToken())
@@ -242,117 +546,46 @@ const isMerchant = computed(() => {
   return userStore.roles && userStore.roles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
 })
 
-// 默认设施列表
-const defaultFacilities = ['免费WiFi', '停车场', '餐厅', '健身房', '商务中心', '行李寄存']
+// 上一张图片
+function prevImage() {
+  if (currentImageIndex.value > 0) {
+    currentImageIndex.value--
+  } else {
+    currentImageIndex.value = hotel.value.images.length - 1
+  }
+}
 
-// 默认酒店图片
-const defaultHotelImages = [
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=500&fit=crop',
-  'https://images.unsplash.com/photo-1551882547-be7b2a60087d?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1455587734955-081b22074882?w=400&h=300&fit=crop'
-]
+// 下一张图片
+function nextImage() {
+  if (currentImageIndex.value < hotel.value.images.length - 1) {
+    currentImageIndex.value++
+  } else {
+    currentImageIndex.value = 0
+  }
+}
 
-// 获取酒店详情
-async function fetchHotelDetail() {
-  const hotelId = route.params.id
-  if (!hotelId) {
-    loading.value = false
+// 预订
+function handleBook() {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
     return
   }
-
-  try {
-    loading.value = true
-    const res = await getHotelDetail(hotelId)
-    if (res.code === 200) {
-      const data = res.data
-      // 处理设施字段，确保是数组格式
-      if (data.facilities) {
-        if (typeof data.facilities === 'string') {
-          data.facilities = data.facilities.split(',').filter(f => f.trim())
-        }
-      } else {
-        // 如果没有设施数据，使用默认设施
-        data.facilities = defaultFacilities
-      }
-      // 统一字段名
-      data.hotelName = data.hotelName || data.name
-      // 处理封面图片
-      data.coverImage = data.coverImage || data.image || data.img || data.pic || defaultHotelImages[0]
-      // 处理图片数组
-      if (!data.images || !Array.isArray(data.images) || data.images.length === 0) {
-        data.images = defaultHotelImages.slice(1)
-      }
-      data.commentCount = data.commentCount || data.reviewCount
-      hotel.value = data
-      // 获取房型列表
-      fetchHotelRooms(hotelId)
-    } else {
-      ElMessage.error(res.msg || '获取酒店信息失败')
-    }
-  } catch (error) {
-    console.error('获取酒店详情失败:', error)
-    ElMessage.error('获取酒店信息失败，请稍后重试')
-  } finally {
-    loading.value = false
+  if (!booking.value.checkIn || !booking.value.checkOut) {
+    ElMessage.warning('请选择入住和退房日期')
+    return
   }
+  ElMessage.success('预订成功！')
 }
 
-// 默认房型图片
-const defaultRoomImages = [
-  'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=300&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=300&h=200&fit=crop'
-]
-
-// 获取房型列表
-async function fetchHotelRooms(hotelId) {
-  try {
-    const res = await getHotelRooms(hotelId)
-    if (res.code === 200) {
-      const data = res.data || []
-      // 为房型添加默认图片
-      rooms.value = data.map((room, index) => ({
-        ...room,
-        coverImage: room.coverImage || room.image || room.img || room.pic || defaultRoomImages[index % defaultRoomImages.length],
-        roomName: room.roomName || room.name,
-        roomType: room.roomType || room.type,
-        bedType: room.bedType || room.bed || '大床',
-        area: room.area || 30,
-        price: room.price || room.roomPrice || 0,
-        features: room.features || (Array.isArray(room.facilities) ? room.facilities : [])
-      }))
-    }
-  } catch (error) {
-    console.error('获取房型列表失败:', error)
-  }
-}
-
-// 主图加载失败处理
-function handleImageError(event) {
-  event.target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=500&fit=crop'
-}
-
-// 子图加载失败处理
-function handleSubImageError(event) {
-  event.target.src = 'https://images.unsplash.com/photo-1551882547-be7b2a60087d?w=400&h=300&fit=crop'
-}
-
-// 房型图片加载失败处理
-function handleRoomImageError(event) {
-  event.target.src = 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=300&h=200&fit=crop'
-}
-
-// 预订房间
+// 预订房型
 function handleBookRoom(room) {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录')
     router.push('/login')
     return
   }
-  // 跳转到预订页面
-  ElMessage.success(`已选择房型：${room.roomName}`)
-  // router.push(`/booking/${hotel.value.id}/${room.id}`)
+  ElMessage.success(`已选择房型：${room.name}`)
 }
 
 // 跳转到首页
@@ -385,7 +618,15 @@ function handleUserCommand(command) {
 }
 
 onMounted(() => {
-  fetchHotelDetail()
+  // 设置默认预订日期
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const dayAfterTomorrow = new Date(today)
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2)
+
+  booking.value.checkIn = tomorrow.toISOString().split('T')[0]
+  booking.value.checkOut = dayAfterTomorrow.toISOString().split('T')[0]
 })
 </script>
 
@@ -509,28 +750,6 @@ onMounted(() => {
   color: #fff;
 }
 
-/* 加载状态 */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  padding-top: 80px;
-  color: #999;
-}
-
-.loading-icon {
-  font-size: 40px;
-  margin-bottom: 16px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 /* 面包屑导航 */
 .breadcrumb-section {
   padding: 80px 0 20px;
@@ -543,21 +762,22 @@ onMounted(() => {
   padding: 0 20px;
 }
 
-/* 酒店主要信息 */
-.hotel-main {
+/* 图片轮播 */
+.gallery-section {
   padding: 20px 0;
+  background: #fff;
 }
 
-.hotel-gallery {
+.gallery {
   display: flex;
+  flex-direction: column;
   gap: 16px;
-  margin-bottom: 20px;
 }
 
 .main-image {
-  flex: 2;
-  height: 400px;
-  border-radius: 8px;
+  position: relative;
+  height: 450px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -567,36 +787,99 @@ onMounted(() => {
   object-fit: cover;
 }
 
-.sub-images {
-  flex: 1;
+.image-nav {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  justify-content: space-between;
+  padding: 0 16px;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
-.sub-images img {
-  flex: 1;
-  height: calc(50% - 8px);
-  object-fit: cover;
-  border-radius: 8px;
+.nav-btn {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 24px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hotel-info-card {
+.nav-btn:hover {
   background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.image-counter {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.thumbnail-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.thumbnail {
+  width: 120px;
+  height: 80px;
   border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.thumbnail:hover {
+  border-color: #ff6b6b;
+}
+
+.thumbnail.active {
+  border-color: #ff6b6b;
+}
+
+/* 酒店主要信息 */
+.hotel-main {
+  padding: 30px 0;
+}
+
+.main-content {
+  display: flex;
+  gap: 30px;
+}
+
+.hotel-info {
+  flex: 1;
 }
 
 .hotel-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 16px;
 }
 
 .hotel-name {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: #333;
 }
@@ -607,8 +890,6 @@ onMounted(() => {
 }
 
 .tag {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  color: #fff;
   padding: 4px 12px;
   border-radius: 4px;
   font-size: 12px;
@@ -616,8 +897,13 @@ onMounted(() => {
 }
 
 .star-tag {
-  color: #ffb800;
-  font-size: 16px;
+  background: #fff3e6;
+  color: #ff9500;
+}
+
+.type-tag {
+  background: #e6f7ff;
+  color: #1890ff;
 }
 
 .hotel-score {
@@ -627,17 +913,17 @@ onMounted(() => {
 }
 
 .score {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   color: #ff6b6b;
   margin-right: 8px;
 }
 
 .score-label {
-  font-size: 14px;
+  font-size: 16px;
   color: #ff6b6b;
   background: rgba(255, 107, 107, 0.1);
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 4px;
   margin-right: 12px;
 }
@@ -647,56 +933,346 @@ onMounted(() => {
   color: #999;
 }
 
-.hotel-address {
+.hotel-address,
+.hotel-phone {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
+  margin-bottom: 12px;
+  font-size: 15px;
   color: #666;
 }
 
-.address-icon {
-  font-size: 16px;
+.icon {
+  font-size: 18px;
 }
 
-.hotel-facilities {
+.hotel-intro {
+  margin-top: 24px;
+}
+
+.hotel-intro h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.hotel-intro p {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.8;
+}
+
+/* 预订卡片 */
+.booking-card {
+  width: 360px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 90px;
+}
+
+.price-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.price-label {
+  font-size: 14px;
+  color: #999;
+}
+
+.price-symbol {
+  font-size: 20px;
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.price {
+  font-size: 42px;
+  font-weight: 700;
+  color: #ff6b6b;
+}
+
+.price-unit {
+  font-size: 14px;
+  color: #999;
+}
+
+.booking-dates {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.date-item {
+  flex: 1;
+}
+
+.date-item label {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.date-item input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.date-item input:focus {
+  border-color: #ff6b6b;
+}
+
+.booking-guests {
   margin-bottom: 20px;
 }
 
-.facility-tag {
-  font-size: 12px;
+.booking-guests label {
+  display: block;
+  font-size: 13px;
   color: #666;
-  background: #f5f5f5;
-  padding: 6px 12px;
-  border-radius: 4px;
+  margin-bottom: 6px;
 }
 
-.hotel-description h3 {
+.booking-guests select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.booking-guests select:focus {
+  border-color: #ff6b6b;
+}
+
+.book-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: #fff;
+  border: none;
+  border-radius: 25px;
   font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.book-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.booking-tip {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  margin-top: 12px;
+}
+
+/* 设施服务 */
+.facilities-section {
+  padding: 30px 0;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.facilities-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.facility-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 10px;
+}
+
+.facility-icon {
+  font-size: 28px;
+}
+
+.facility-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.facility-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.facility-desc {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.service-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.service-label {
+  color: #666;
+}
+
+.service-value {
+  color: #333;
+  font-weight: 500;
+}
+
+/* 入住政策 */
+.policy-section {
+  padding: 30px 0;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.policy-card {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.policy-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.policy-card h4 {
+  font-size: 15px;
   font-weight: 600;
   color: #333;
   margin-bottom: 8px;
 }
 
-.hotel-description p {
-  font-size: 14px;
+.policy-card p {
+  font-size: 13px;
   color: #666;
   line-height: 1.6;
 }
 
-/* 房型列表 */
-.room-section {
-  padding: 20px 0 40px;
+/* 入住须知 */
+.rules-section {
+  padding: 30px 0;
+  background: #fff;
+  margin-bottom: 20px;
 }
 
-.section-title {
-  font-size: 24px;
-  font-weight: 700;
+.rules-content {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 10px;
+}
+
+.rules-content p {
+  font-size: 14px;
+  color: #666;
+  line-height: 2;
+  padding-left: 20px;
+  position: relative;
+}
+
+.rules-content p::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #ff6b6b;
+}
+
+/* 周边信息 */
+.surrounding-section {
+  padding: 30px 0;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.surrounding-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.surrounding-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 10px;
+}
+
+.surrounding-icon {
+  font-size: 28px;
+}
+
+.surrounding-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.surrounding-name {
+  font-size: 14px;
+  font-weight: 600;
   color: #333;
+}
+
+.surrounding-distance {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 房型列表 */
+.room-section {
+  padding: 30px 0;
+  background: #fff;
   margin-bottom: 20px;
 }
 
@@ -709,18 +1285,18 @@ onMounted(() => {
 .room-card {
   display: flex;
   background: #fff;
-  border-radius: 8px;
+  border: 1px solid #eee;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
 }
 
 .room-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .room-image {
-  width: 200px;
+  width: 220px;
   height: 160px;
   flex-shrink: 0;
 }
@@ -734,8 +1310,6 @@ onMounted(() => {
 .room-info {
   flex: 1;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
 }
 
 .room-name {
@@ -767,7 +1341,8 @@ onMounted(() => {
 }
 
 .room-bed,
-.room-area {
+.room-area,
+.room-max {
   font-size: 13px;
   color: #999;
   margin-bottom: 4px;
@@ -786,23 +1361,6 @@ onMounted(() => {
 .price-info {
   text-align: right;
   margin-bottom: 12px;
-}
-
-.price-symbol {
-  font-size: 16px;
-  color: #ff6b6b;
-  font-weight: 600;
-}
-
-.price {
-  font-size: 32px;
-  font-weight: 700;
-  color: #ff6b6b;
-}
-
-.price-unit {
-  font-size: 14px;
-  color: #999;
 }
 
 .book-btn {
@@ -824,7 +1382,72 @@ onMounted(() => {
 
 /* 用户评价 */
 .review-section {
-  padding: 20px 0 40px;
+  padding: 30px 0;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.review-summary {
+  display: flex;
+  gap: 40px;
+  padding: 24px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+
+.summary-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.big-score {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ff6b6b;
+}
+
+.summary-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-label {
+  width: 30px;
+  font-size: 13px;
+  color: #666;
+}
+
+.bar-track {
+  flex: 1;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  border-radius: 4px;
+}
+
+.bar-count {
+  width: 40px;
+  text-align: right;
+  font-size: 13px;
+  color: #999;
 }
 
 .review-list {
@@ -834,10 +1457,9 @@ onMounted(() => {
 }
 
 .review-item {
-  background: #fff;
-  border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: #f9f9f9;
+  border-radius: 10px;
 }
 
 .review-header {
@@ -854,15 +1476,15 @@ onMounted(() => {
 }
 
 .reviewer-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -872,23 +1494,18 @@ onMounted(() => {
 }
 
 .reviewer-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #333;
 }
 
 .review-time {
-  font-size: 12px;
+  font-size: 13px;
   color: #999;
 }
 
-.review-score {
-  display: flex;
-  align-items: baseline;
-}
-
 .review-score .score {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #ff6b6b;
 }
@@ -902,14 +1519,14 @@ onMounted(() => {
 .review-content {
   font-size: 14px;
   color: #666;
-  line-height: 1.6;
+  line-height: 1.8;
   margin-bottom: 12px;
 }
 
 .review-reply {
-  background: #f9f9f9;
-  padding: 12px;
-  border-radius: 6px;
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
   font-size: 13px;
 }
 
@@ -920,69 +1537,6 @@ onMounted(() => {
 
 .reply-content {
   color: #666;
-}
-
-.empty-review {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.empty-review p {
-  font-size: 14px;
-  color: #999;
-}
-
-/* 错误状态 */
-.error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  padding-top: 80px;
-}
-
-.error-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-}
-
-.error-state h3 {
-  font-size: 20px;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.error-state p {
-  font-size: 14px;
-  color: #999;
-  margin-bottom: 20px;
-}
-
-.back-btn {
-  padding: 12px 32px;
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  color: #fff;
-  border: none;
-  border-radius: 25px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.back-btn:hover {
-  opacity: 0.9;
 }
 
 /* 页脚 */
@@ -1038,6 +1592,29 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
+@media (max-width: 992px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .booking-card {
+    width: 100%;
+    position: static;
+  }
+
+  .facilities-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .policy-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .surrounding-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .header-content {
     flex-wrap: wrap;
@@ -1048,25 +1625,25 @@ onMounted(() => {
     display: none;
   }
 
-  .hotel-gallery {
-    flex-direction: column;
-  }
-
-  .main-image {
-    height: 250px;
-  }
-
-  .sub-images {
-    flex-direction: row;
-  }
-
-  .sub-images img {
-    height: 100px;
-  }
-
   .hotel-header {
     flex-direction: column;
     gap: 12px;
+  }
+
+  .hotel-name {
+    font-size: 24px;
+  }
+
+  .facilities-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .policy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .surrounding-grid {
+    grid-template-columns: 1fr;
   }
 
   .room-card {
@@ -1083,6 +1660,11 @@ onMounted(() => {
     border-top: 1px solid #eee;
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
+  }
+
+  .review-summary {
+    flex-direction: column;
     align-items: center;
   }
 
