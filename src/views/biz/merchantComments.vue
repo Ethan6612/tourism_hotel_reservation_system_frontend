@@ -7,32 +7,24 @@
         <p>管理您旗下酒店收到的住客评价</p>
       </div>
 
-      <!-- 筛选栏 -->
-      <el-form :model="queryParams" :inline="true" class="filter-form">
-        <el-form-item label="酒店">
-          <el-select v-model="queryParams.hotelId" placeholder="全部酒店" clearable style="width: 220px" @change="handleQuery">
-            <el-option
-              v-for="hotel in myHotels"
-              :key="hotel.hotelId"
-              :label="hotel.hotelName"
-              :value="hotel.hotelId"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="评分">
-          <el-select v-model="queryParams.score" placeholder="全部评分" clearable style="width: 130px" @change="handleQuery">
-            <el-option label="5星" :value="5" />
-            <el-option label="4星" :value="4" />
-            <el-option label="3星" :value="3" />
-            <el-option label="2星" :value="2" />
-            <el-option label="1星" :value="1" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
-      </el-form>
+      <!-- 酒店信息 + 筛选 -->
+      <div class="hotel-info-bar">
+        <div class="hotel-tag">
+          <span class="hotel-tag-icon">🏨</span>
+          <span class="hotel-tag-name">{{ myHotelName || '加载中...' }}</span>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <el-input v-model="queryParams.keyword" placeholder="搜索评价内容..." clearable prefix-icon="Search" style="width: 220px" @keyup.enter="handleQuery" @clear="handleQuery" />
+        <el-select v-model="queryParams.score" placeholder="全部评分" clearable style="width: 110px" @change="handleQuery">
+          <el-option label="5星" :value="5" /><el-option label="4星" :value="4" /><el-option label="3星" :value="3" /><el-option label="2星" :value="2" /><el-option label="1星" :value="1" />
+        </el-select>
+        <el-select v-model="queryParams.roomType" placeholder="全部房型" clearable style="width: 150px" @change="handleQuery">
+          <el-option v-for="rt in roomTypes" :key="rt" :label="rt" :value="rt" />
+        </el-select>
+        <el-button icon="Search" type="primary" @click="handleQuery">搜索</el-button>
+        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+      </div>
 
       <!-- 评价列表 -->
       <div v-loading="loading" class="comment-cards">
@@ -54,6 +46,11 @@
               </div>
             </div>
 
+            <!-- 房型信息 -->
+            <div class="room-info" v-if="item.roomType">
+              <span class="room-tag">🛏️ {{ item.roomType }}</span>
+            </div>
+
             <p class="card-text">{{ item.content }}</p>
 
             <!-- 图片 -->
@@ -68,11 +65,30 @@
               />
             </div>
 
-            <!-- 商家自己的回复 -->
+            <!-- 商家回复 -->
             <div v-if="item.replyContent" class="reply-box">
-              <span class="reply-label">💬 我的回复</span>
-              <span class="reply-time">{{ item.replyTime }}</span>
-              <p>{{ item.replyContent }}</p>
+              <div class="reply-header-row">
+                <span class="reply-label">💬 我的回复</span>
+                <span class="reply-time">{{ item.replyTime }}</span>
+              </div>
+              <div v-if="getReplies(item.replyContent).length <= 1" class="reply-body">
+                <p>{{ getReplies(item.replyContent)[0]?.text || item.replyContent }}</p>
+              </div>
+              <div v-else class="reply-body">
+                <div class="reply-latest">
+                  <span class="reply-tag">最新回复</span>
+                  <p>{{ getReplies(item.replyContent)[0]?.text }}</p>
+                </div>
+                <div v-if="item._showAllReplies" class="reply-history">
+                  <div v-for="(r, ri) in getReplies(item.replyContent).slice(1)" :key="ri" class="reply-history-item">
+                    <span class="reply-history-time">{{ r.time }}</span>
+                    <p>{{ r.text }}</p>
+                  </div>
+                </div>
+                <el-button link type="primary" size="small" @click="item._showAllReplies = !item._showAllReplies">
+                  {{ item._showAllReplies ? '收起历史回复' : '查看历史回复 (' + (getReplies(item.replyContent).length - 1) + '条)' }}
+                </el-button>
+              </div>
             </div>
 
             <!-- 申诉状态 -->
@@ -85,12 +101,11 @@
 
           <div class="card-actions">
             <el-button
-              v-if="!item.replyContent"
               link
               type="primary"
               icon="ChatDotRound"
               @click="handleReply(item)"
-            >回复</el-button>
+            >{{ item.replyContent ? '再次回复' : '回复' }}</el-button>
             <el-button
               v-if="!item.appealStatus || item.appealStatus === '0'"
               link
@@ -155,18 +170,20 @@
 <script setup name="MerchantComments">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { listMerchantComments, appealComment, replyComment } from '@/api/biz/comment'
+import { listMerchantComments, appealComment, merchantReplyComment } from '@/api/biz/comment'
 
 const loading = ref(false)
 const commentList = ref([])
 const total = ref(0)
-const myHotels = ref([])
+const myHotelName = ref('')
+const roomTypes = ref([])
 
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
-  hotelId: undefined,
-  score: undefined
+  score: undefined,
+  keyword: '',
+  roomType: ''
 })
 
 // 回复
@@ -182,6 +199,22 @@ const appealForm = ref({ reason: '' })
 
 function getInitial(name) {
   return (name || '商').charAt(0)
+}
+
+function getReplies(replyContent) {
+  if (!replyContent) return []
+  // 按 【yyyy-MM-dd HH:mm:ss】 分割多条回复
+  const parts = replyContent.split(/【(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})】/g)
+  const replies = []
+  for (let i = 1; i < parts.length; i += 2) {
+    replies.push({ time: parts[i], text: (parts[i + 1] || '').trim() })
+  }
+  // 没分割成功则当作一条
+  if (replies.length === 0 && replyContent.trim()) {
+    replies.push({ time: '', text: replyContent.trim() })
+  }
+  // 最新在前
+  return replies.reverse()
 }
 
 function parseImages(images) {
@@ -202,8 +235,9 @@ function handleQuery(page) {
 }
 
 function resetQuery() {
-  queryParams.value.hotelId = undefined
   queryParams.value.score = undefined
+  queryParams.value.keyword = ''
+  queryParams.value.roomType = ''
   queryParams.value.pageNum = 1
   loadComments()
 }
@@ -212,15 +246,25 @@ async function loadComments() {
   loading.value = true
   try {
     const res = await listMerchantComments(queryParams.value)
-    commentList.value = res.data?.list || res.data?.rows || res.rows || []
+    const list = (res.data?.list || res.data?.rows || res.rows || []).map(item => ({
+      ...item,
+      _showAllReplies: false
+    }))
+    // 收集房型列表（去重）
+    const types = new Set()
+    list.forEach(item => { if (item.roomType) types.add(item.roomType) })
+    roomTypes.value = [...types].sort()
+    // 客户端房型筛选
+    commentList.value = queryParams.value.roomType
+      ? list.filter(item => item.roomType === queryParams.value.roomType)
+      : list
     total.value = res.data?.total || res.total || 0
+    if (list.length > 0 && list[0].hotelName && !myHotelName.value) {
+      myHotelName.value = list[0].hotelName
+    }
   } catch {
-    // 降级：模拟数据
-    commentList.value = [
-      { id: 1, userName: '用户小明', score: 5, content: '酒店非常好，下次还会来！', createTime: '2026-06-05', images: '[]', replyContent: null, appealStatus: '0' },
-      { id: 2, userName: '用户小红', score: 3, content: '房间有点吵，隔音不太好。', createTime: '2026-06-03', images: '[]', replyContent: '感谢您的反馈，我们会改善隔音问题。', replyTime: '2026-06-04', appealStatus: '0' }
-    ]
-    total.value = commentList.value.length
+    commentList.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -236,7 +280,7 @@ async function submitReply() {
   if (!replyRef.value) return
   try {
     await replyRef.value.validate()
-    await replyComment(currentComment.value.id, replyForm.value.replyContent)
+    await merchantReplyComment(currentComment.value.id, replyForm.value.replyContent)
     ElMessage.success('回复成功')
     replyOpen.value = false
     loadComments()
@@ -288,6 +332,38 @@ onMounted(() => { loadComments() })
   font-size: 13px;
   color: #999;
   margin: 0;
+}
+
+.hotel-info-bar {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hotel-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hotel-tag-icon {
+  font-size: 24px;
+}
+
+.hotel-tag-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.filter-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .filter-form {
@@ -358,6 +434,19 @@ onMounted(() => { loadComments() })
   color: #bbb;
 }
 
+.room-info {
+  margin-bottom: 8px;
+}
+
+.room-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #f0f5ff;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #409eff;
+}
+
 .card-text {
   font-size: 14px;
   color: #555;
@@ -369,11 +458,29 @@ onMounted(() => { loadComments() })
   margin: 8px 0;
 }
 
+.filter-bar {
+  background: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .reply-box {
   margin-top: 10px;
   padding: 10px 14px;
   background: #f0fdf4;
   border-radius: 8px;
+}
+
+.reply-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
 
 .reply-label {
@@ -385,14 +492,44 @@ onMounted(() => { loadComments() })
 .reply-time {
   font-size: 12px;
   color: #999;
-  margin-left: 8px;
 }
 
-.reply-box p {
-  margin: 6px 0 0;
+.reply-body p {
+  margin: 4px 0;
   font-size: 13px;
   color: #555;
   line-height: 1.6;
+}
+
+.reply-latest {
+  padding: 6px 0;
+}
+
+.reply-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  background: #22c55e;
+  color: #fff;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.reply-history {
+  border-top: 1px dashed #d1d5db;
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+.reply-history-item {
+  margin-bottom: 6px;
+  padding-left: 8px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.reply-history-time {
+  font-size: 11px;
+  color: #999;
 }
 
 .appeal-info {

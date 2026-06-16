@@ -212,6 +212,15 @@ export function listMerchantComments(query) {
   })
 }
 
+// 商家回复评价
+export function merchantReplyComment(id, replyContent) {
+  return request({
+    url: '/api/merchant/comment/' + id + '/reply',
+    method: 'put',
+    params: { replyContent }
+  })
+}
+
 // 商家申诉评价
 export function appealComment(id, reason) {
   return request({

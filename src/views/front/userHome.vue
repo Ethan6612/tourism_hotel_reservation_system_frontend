@@ -31,9 +31,8 @@
                   <el-dropdown-item command="orders">我的订单</el-dropdown-item>
                   <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
                   <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
-                  <el-dropdown-item command="merchant" v-if="isMerchant" divided>我的商户</el-dropdown-item>
-                  <el-dropdown-item command="console" v-if="isAdmin" divided>前往控制台</el-dropdown-item>
-                  <el-dropdown-item command="logout" :divided="isMerchant || isAdmin">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="console" v-if="isAdmin || isMerchant" divided>前往控制台</el-dropdown-item>
+                  <el-dropdown-item command="logout" :divided="isAdmin || isMerchant">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -523,7 +522,6 @@ function handleUserCommand(command) {
     case 'orders': router.push('/user/profile/orders'); break
     case 'reviews': router.push('/user/myComments'); break
     case 'favorites': router.push('/user/profile/favorites'); break
-    case 'merchant': router.push('/biz/merchant'); break
     case 'console': router.push('/dashboard'); break
     case 'logout': logout(); break
   }

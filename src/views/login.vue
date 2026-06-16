@@ -9,139 +9,141 @@
         <el-tab-pane label="注册" name="register" v-if="registerEnabled" />
       </el-tabs>
 
-      <!-- 登录表单 -->
-      <el-form
-        v-show="activeTab === 'login'"
-        ref="loginRef"
-        :model="loginForm"
-        :rules="loginRules"
-        class="auth-form"
-      >
-        <el-form-item prop="username">
-          <el-input
-            v-model="loginForm.username"
-            type="text"
-            size="large"
-            auto-complete="off"
-            placeholder="注册邮箱"
-          >
-            <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
-          </el-input>
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input
-            v-model="loginForm.password"
-            type="password"
-            size="large"
-            auto-complete="off"
-            placeholder="密码"
-            @keyup.enter="handleLogin"
-          >
-            <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
-          </el-input>
-        </el-form-item>
-        <el-form-item prop="code" v-if="captchaEnabled">
-          <el-input
-            v-model="loginForm.code"
-            size="large"
-            auto-complete="off"
-            placeholder="验证码"
-            style="width: 63%"
-            @keyup.enter="handleLogin"
-          >
-            <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
-          </el-input>
-          <div class="login-code">
-            <img :src="codeUrl" @click="getCode" class="login-code-img" alt="验证码" />
-          </div>
-        </el-form-item>
-        <el-checkbox v-model="loginForm.rememberMe" style="margin: 0 0 20px 0;">记住密码</el-checkbox>
-        <el-form-item style="width: 100%;">
-          <el-button
-            :loading="loading"
-            size="large"
-            type="primary"
-            style="width: 100%;"
-            @click.prevent="handleLogin"
-          >
-            <span v-if="!loading">登 录</span>
-            <span v-else>登 录 中...</span>
-          </el-button>
-        </el-form-item>
-      </el-form>
-
-      <!-- 注册表单（第一步：邮箱 + 验证码） -->
-      <el-form
-        v-show="activeTab === 'register'"
-        ref="registerRef"
-        :model="registerForm"
-        :rules="registerRules"
-        class="auth-form"
-      >
-        <el-form-item prop="userType">
-          <el-radio-group v-model="registerForm.userType" class="user-type-group">
-            <el-radio :label="0">普通用户</el-radio>
-            <el-radio :label="1">商家</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item prop="nickName">
-          <el-input
-            v-model="registerForm.nickName"
-            type="text"
-            size="large"
-            auto-complete="off"
-            placeholder="昵称（选填）"
-          >
-            <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
-          </el-input>
-        </el-form-item>
-        <el-form-item prop="email">
-          <el-input
-            v-model="registerForm.email"
-            type="text"
-            size="large"
-            auto-complete="off"
-            placeholder="邮箱地址"
-          >
-            <template #prefix><svg-icon icon-class="email" class="el-input__icon input-icon" /></template>
-          </el-input>
-        </el-form-item>
-        <el-form-item prop="emailCode">
-          <el-input
-            v-model="registerForm.emailCode"
-            size="large"
-            auto-complete="off"
-            placeholder="邮箱验证码"
-            style="width: 63%"
-            @keyup.enter="handleVerifyAndNext"
-          >
-            <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
-          </el-input>
-          <div class="login-code">
-            <el-button
-              size="small"
-              type="primary"
-              :disabled="smsButtonDisabled"
-              @click="handleSendEmailCode"
-              class="sms-btn"
+      <div class="form-area">
+        <!-- 登录表单 -->
+        <el-form
+          v-show="activeTab === 'login'"
+          ref="loginRef"
+          :model="loginForm"
+          :rules="loginRules"
+          class="auth-form"
+        >
+          <el-form-item prop="username">
+            <el-input
+              v-model="loginForm.username"
+              type="text"
+              size="large"
+              auto-complete="off"
+              placeholder="注册邮箱"
             >
-              {{ smsButtonText }}
+              <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
+            </el-input>
+          </el-form-item>
+          <el-form-item prop="password">
+            <el-input
+              v-model="loginForm.password"
+              type="password"
+              size="large"
+              auto-complete="off"
+              placeholder="密码"
+              @keyup.enter="handleLogin"
+            >
+              <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
+            </el-input>
+          </el-form-item>
+          <el-form-item prop="code" v-if="captchaEnabled">
+            <el-input
+              v-model="loginForm.code"
+              size="large"
+              auto-complete="off"
+              placeholder="验证码"
+              style="width: 63%"
+              @keyup.enter="handleLogin"
+            >
+              <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
+            </el-input>
+            <div class="login-code">
+              <img :src="codeUrl" @click="getCode" class="login-code-img" alt="验证码" />
+            </div>
+          </el-form-item>
+          <el-checkbox v-model="loginForm.rememberMe" style="margin: 0 0 20px 0;">记住密码</el-checkbox>
+          <el-form-item style="width: 100%;">
+            <el-button
+              :loading="loading"
+              size="large"
+              type="primary"
+              style="width: 100%;"
+              @click.prevent="handleLogin"
+            >
+              <span v-if="!loading">登 录</span>
+              <span v-else>登 录 中...</span>
             </el-button>
-          </div>
-        </el-form-item>
-        <el-form-item style="width: 100%;">
-          <el-button
-            :loading="verifyLoading"
-            size="large"
-            type="primary"
-            style="width: 100%;"
-            @click.prevent="handleVerifyAndNext"
-          >
-            <span v-if="!verifyLoading">验证并设置密码</span>
-            <span v-else>验证中...</span>
-          </el-button>
-        </el-form-item>
-      </el-form>
+          </el-form-item>
+        </el-form>
+
+        <!-- 注册表单（第一步：邮箱 + 验证码） -->
+        <el-form
+          v-show="activeTab === 'register'"
+          ref="registerRef"
+          :model="registerForm"
+          :rules="registerRules"
+          class="auth-form"
+        >
+          <el-form-item prop="userType">
+            <el-radio-group v-model="registerForm.userType" class="user-type-group">
+              <el-radio :label="0">普通用户</el-radio>
+              <el-radio :label="1">商家</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item prop="nickName">
+            <el-input
+              v-model="registerForm.nickName"
+              type="text"
+              size="large"
+              auto-complete="off"
+              placeholder="昵称（选填）"
+            >
+              <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
+            </el-input>
+          </el-form-item>
+          <el-form-item prop="email">
+            <el-input
+              v-model="registerForm.email"
+              type="text"
+              size="large"
+              auto-complete="off"
+              placeholder="邮箱地址"
+            >
+              <template #prefix><svg-icon icon-class="email" class="el-input__icon input-icon" /></template>
+            </el-input>
+          </el-form-item>
+          <el-form-item prop="emailCode">
+            <el-input
+              v-model="registerForm.emailCode"
+              size="large"
+              auto-complete="off"
+              placeholder="邮箱验证码"
+              style="width: 63%"
+              @keyup.enter="handleVerifyAndNext"
+            >
+              <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
+            </el-input>
+            <div class="login-code">
+              <el-button
+                size="small"
+                type="primary"
+                :disabled="smsButtonDisabled"
+                @click="handleSendEmailCode"
+                class="sms-btn"
+              >
+                {{ smsButtonText }}
+              </el-button>
+            </div>
+          </el-form-item>
+          <el-form-item style="width: 100%;">
+            <el-button
+              :loading="verifyLoading"
+              size="large"
+              type="primary"
+              style="width: 100%;"
+              @click.prevent="handleVerifyAndNext"
+            >
+              <span v-if="!verifyLoading">验证并设置密码</span>
+              <span v-else>验证中...</span>
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </div>
 
       <!-- 游客登录 -->
       <div class="visitor-section">
@@ -324,9 +326,10 @@ function handleLogin() {
               }
               return acc
             }, {})
-            // 判断用户角色，管理员跳转到管理页面，普通用户和商户跳转到主页
+            // 管理员和商家跳转到控制台，普通用户跳转到主页
             const isAdmin = userStore.roles && userStore.roles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
-            if (isAdmin) {
+            const isMerchant = userStore.roles && userStore.roles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
+            if (isAdmin || isMerchant) {
               router.push({ path: redirect.value || "/dashboard", query: otherQueryParams })
             } else {
               router.push({ path: redirect.value || "/home", query: otherQueryParams })
@@ -341,8 +344,10 @@ function handleLogin() {
         // 获取用户信息
         return userStore.getInfo()
       }).then((userInfo) => {
-        // 所有用户登录后都跳转到首页
-        router.push('/home')
+        // 兜底跳转
+        const isAdmin = userStore.roles?.some(r => r === 'admin' || r === 'ROLE_ADMIN')
+        const isMerchant = userStore.roles?.some(r => r === 'merchant' || r === 'ROLE_MERCHANT')
+        router.push(isAdmin || isMerchant ? '/dashboard' : '/home')
       }).catch(() => {
         loading.value = false
         if (captchaEnabled.value) {
@@ -447,9 +452,10 @@ function navigateAfterAuth() {
     }
     return acc
   }, {})
-  // 根据角色跳转：管理员→dashboard，普通用户/商户→首页
-  const isAdmin = userStore.roles && userStore.roles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
-  if (isAdmin) {
+  // 管理员和商家→控制台，普通用户→主页
+  const isAdmin = userStore.roles?.some(r => r === 'admin' || r === 'ROLE_ADMIN')
+  const isMerchant = userStore.roles?.some(r => r === 'merchant' || r === 'ROLE_MERCHANT')
+  if (isAdmin || isMerchant) {
     router.push({ path: redirect.value || "/dashboard", query: otherQueryParams })
   } else {
     router.push({ path: redirect.value || "/home", query: otherQueryParams })
@@ -520,9 +526,12 @@ getCookie()
   border-radius: 16px;
   background: #ffffff;
   width: 420px;
-  padding: 40px 40px 30px;
+  min-height: 520px;
+  padding: 30px 36px 24px;
   box-shadow: 0 20px 60px rgba(255, 122, 69, 0.3);
   animation: slideUp 0.5s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideUp {
@@ -537,11 +546,11 @@ getCookie()
 }
 
 .auth-tabs {
-  margin-bottom: 25px;
+  margin-bottom: 12px;
 
   :deep(.el-tabs__nav) {
     justify-content: center;
-    margin: 0 0 15px;
+    margin: 0 0 8px;
   }
 
   :deep(.el-tabs__item) {
@@ -563,9 +572,14 @@ getCookie()
   }
 }
 
+.form-area {
+  min-height: 340px;
+  position: relative;
+}
+
 .auth-form {
   :deep(.el-form-item) {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   :deep(.el-input) {
@@ -740,7 +754,7 @@ getCookie()
 }
 
 .visitor-section {
-  margin-top: 10px;
+  margin-top: auto;
   padding-top: 20px;
   border-top: 1px dashed #e8e8e8;
 

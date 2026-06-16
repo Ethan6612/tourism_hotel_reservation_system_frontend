@@ -37,7 +37,7 @@
           </template>
           <template v-else>
             <button class="action-btn" @click="goToLogin">登录</button>
-            <button class="action-btn primary">注册</button>
+            <button class="action-btn primary" @click="goToRegister">注册</button>
           </template>
         </div>
       </div>
@@ -286,6 +286,10 @@ function handleDropdownVisibleChange(visible) {
 
 function goToLogin() {
   router.push('/login')
+}
+
+function goToRegister() {
+  router.push('/register')
 }
 
 function logout() {

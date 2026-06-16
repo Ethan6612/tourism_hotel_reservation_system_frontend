@@ -27,7 +27,10 @@ router.beforeEach(async (to, from, next) => {
     to.meta.title && useSettingsStore().setTitle(to.meta.title)
     /* has token*/
     if (to.path === '/login') {
-      next({ path: '/index' })
+      const roles = useUserStore().roles
+      const isAdmin = roles.some(r => r === 'admin' || r === 'ROLE_ADMIN')
+      const isMerchant = roles.some(r => r === 'merchant' || r === 'ROLE_MERCHANT')
+      next({ path: (isAdmin || isMerchant) ? '/dashboard' : '/index' })
       NProgress.done()
     } else {
       // 已登录用户需要检查角色，即使是白名单路径也要检查
@@ -51,17 +54,13 @@ router.beforeEach(async (to, from, next) => {
           const isAdmin = userRoles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
           const isMerchant = userRoles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
           
-          // 添加路由后,根据角色决定首次登录的跳转路径
-          // 只有从登录页跳转过来时才进行角色重定向
+          // 管理员和商家→控制台，普通用户→主页
           if (from.path === '/login') {
-            if (isAdmin && to.path === '/index') {
-              // 管理员从登录页访问/index,重定向到/dashboard
+            if ((isAdmin || isMerchant) && (to.path === '/index' || to.path === '/home')) {
               next({ path: '/dashboard', replace: true })
-            } else if (!isAdmin && to.path === '/dashboard') {
-              // 非管理员从登录页访问/dashboard,重定向到/index
-              next({ path: '/index', replace: true })
+            } else if (!isAdmin && !isMerchant && to.path === '/dashboard') {
+              next({ path: '/home', replace: true })
             } else {
-              // 其他情况,正常跳转
               next()
             }
           } else {

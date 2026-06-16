@@ -176,7 +176,11 @@ export const constantRoutes = [
         path: 'comment',
         component: () => import('@/views/biz/comment/index'),
         name: 'Comment',
-        meta: { title: '评价管理', icon: 'message' }
+        meta: {
+          title: '评价管理',
+          icon: 'message',
+          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
+        }
       },
       {
         path: 'payment',
@@ -188,7 +192,11 @@ export const constantRoutes = [
         path: 'merchantComments',
         component: () => import('@/views/biz/merchantComments'),
         name: 'MerchantComments',
-        meta: { title: '评价管理（商户）', icon: 'message' }
+        meta: {
+          title: '评价管理',
+          icon: 'message',
+          roles: ['merchant', 'ROLE_MERCHANT']
+        }
       }
     ]
   }
