@@ -143,62 +143,6 @@ export const constantRoutes = [
     hidden: true,
     name: 'AppendComment',
     meta: { title: '追加评价' }
-  },
-  {
-    path: '/biz',
-    component: Layout,
-    hidden: false,
-    alwaysShow: true,
-    redirect: 'noredirect',
-    meta: { title: '业务管理', icon: 'shopping' },
-    children: [
-      {
-        path: 'merchant',
-        component: () => import('@/views/biz/merchant/index'),
-        name: 'Merchant',
-        meta: { 
-          title: '商户管理', 
-          icon: 'peoples',
-          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
-        }
-      },
-      {
-        path: 'merchantAudit',
-        component: () => import('@/views/biz/merchant/audit'),
-        name: 'MerchantAudit',
-        meta: { 
-          title: '商户审核', 
-          icon: 'checkbox',
-          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
-        }
-      },
-      {
-        path: 'comment',
-        component: () => import('@/views/biz/comment/index'),
-        name: 'Comment',
-        meta: {
-          title: '评价管理',
-          icon: 'message',
-          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
-        }
-      },
-      {
-        path: 'payment',
-        component: () => import('@/views/biz/payment/index'),
-        name: 'Payment',
-        meta: { title: '支付记录', icon: 'pay' }
-      },
-      {
-        path: 'merchantComments',
-        component: () => import('@/views/biz/merchantComments'),
-        name: 'MerchantComments',
-        meta: {
-          title: '评价管理',
-          icon: 'message',
-          roles: ['merchant', 'ROLE_MERCHANT']
-        }
-      }
-    ]
   }
 ]
 
