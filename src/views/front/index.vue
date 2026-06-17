@@ -28,9 +28,12 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item command="orders">我的订单</el-dropdown-item>
+                  <el-dropdown-item command="points">我的积分</el-dropdown-item>
+                  <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
                   <el-dropdown-item command="merchant" v-if="isMerchant">我的商户</el-dropdown-item>
-                  <el-dropdown-item command="console" v-if="isAdmin">前往控制台</el-dropdown-item>
-                  <el-dropdown-item command="logout" :divided="isMerchant || isAdmin">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="console" v-if="isAdmin" divided>前往控制台</el-dropdown-item>
+                  <el-dropdown-item command="logout" :divided="!isAdmin && !isMerchant">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -264,6 +267,15 @@ const isMerchant = computed(() => {
 
 function handleUserCommand(command) {
   switch (command) {
+    case 'orders':
+      router.push('/user/profile/orders')
+      break
+    case 'points':
+      router.push('/user/profile/points')
+      break
+    case 'reviews':
+      router.push('/user/myComments')
+      break
     case 'merchant':
       // ✅ 商户用户点击"我的商户"，跳转到评价管理页面
       router.push('/biz/comment')

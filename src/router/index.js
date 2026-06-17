@@ -117,6 +117,20 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/user/profile/orders',
+    component: () => import('@/views/front/myOrders'),
+    hidden: true,
+    name: 'MyOrders',
+    meta: { title: '我的订单' }
+  },
+  {
+    path: '/user/profile/points',
+    component: () => import('@/views/front/myPoints'),
+    hidden: true,
+    name: 'MyPoints',
+    meta: { title: '我的积分' }
+  },
+  {
     path: '/user/myComments',
     component: () => import('@/views/front/myComments'),
     hidden: true,
@@ -152,6 +166,16 @@ export const constantRoutes = [
     redirect: 'noredirect',
     meta: { title: '业务管理', icon: 'shopping' },
     children: [
+      {
+        path: 'order',
+        component: () => import('@/views/biz/order/index'),
+        name: 'Order',
+        meta: {
+          title: '订单管理',
+          icon: 'list',
+          roles: ['admin', 'ROLE_ADMIN']
+        }
+      },
       {
         path: 'merchant',
         component: () => import('@/views/biz/merchant/index'),
