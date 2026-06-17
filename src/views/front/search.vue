@@ -484,71 +484,79 @@ function resetFilters() {
 // 默认设施列表
 const defaultFacilitiesList = ['免费WiFi', '停车场', '餐厅', '健身房', '商务中心', '行李寄存', '游泳池', 'SPA', '会议室', '接机服务']
 
-// 获取酒店数据
+// 排序字段映射
+const sortFieldMap = {
+  'recommend': { orderBy: 'score', orderDirection: 'desc' },
+  'price_asc': { orderBy: 'price', orderDirection: 'asc' },
+  'price_desc': { orderBy: 'price', orderDirection: 'desc' },
+  'score_desc': { orderBy: 'score', orderDirection: 'desc' },
+  'review_desc': { orderBy: 'createTime', orderDirection: 'desc' }
+}
+
+// 获取酒店数据（使用后端分页）
 async function fetchHotels() {
   loading.value = true
   try {
+    const sortConfig = sortFieldMap[currentSort.value] || sortFieldMap['recommend']
+
     const params = {
-      pageNum: currentPage.value,
+      currentPage: currentPage.value,
       pageSize: pageSize.value,
       keyword: searchForm.value.keyword || undefined,
-      star: filters.value.star.length > 0 ? filters.value.star.join(',') : undefined,
+      star: filters.value.star.length === 1 ? filters.value.star[0] : undefined,
       minPrice: filters.value.minPrice || undefined,
       maxPrice: filters.value.maxPrice || undefined,
       minScore: filters.value.minScore || undefined,
-      type: filters.value.types.length > 0 ? filters.value.types.join(',') : undefined,
-      sort: currentSort.value
+      facility: filters.value.facilities.length > 0 ? filters.value.facilities.join(',') : undefined,
+      orderBy: sortConfig.orderBy,
+      orderDirection: sortConfig.orderDirection
     }
 
     const res = await searchHotels(params)
     if (res.code === 200) {
+      const data = res.data
+      const rows = data.rows || []
+
       // 处理返回的酒店数据，统一字段名
-      const rows = res.data.rows || []
-      let processedHotels = rows.map(hotel => {
+      hotels.value = rows.map(hotel => {
         // 处理设施字段
         let facilities = []
-        if (hotel.facilities) {
-          if (Array.isArray(hotel.facilities)) {
-            facilities = hotel.facilities
-          } else if (typeof hotel.facilities === 'string') {
-            facilities = hotel.facilities.split(',').filter(f => f.trim())
+        if (hotel.facilityList) {
+          facilities = Array.isArray(hotel.facilityList) ? hotel.facilityList : []
+        } else if (hotel.facility) {
+          if (Array.isArray(hotel.facility)) {
+            facilities = hotel.facility
+          } else if (typeof hotel.facility === 'string') {
+            facilities = hotel.facility.split(',').filter(f => f.trim())
           }
         }
-        // 如果没有设施数据，随机分配默认设施
+        // 如果没有设施数据，分配默认设施
         if (facilities.length === 0) {
-          const shuffled = [...defaultFacilitiesList].sort(() => 0.5 - Math.random())
-          facilities = shuffled.slice(0, Math.floor(Math.random() * 3) + 3)
+          facilities = defaultFacilitiesList.slice(0, 4)
         }
 
         return {
           ...hotel,
           // 统一酒店名称字段
-          hotelName: hotel.hotelName || hotel.name,
+          hotelName: hotel.name || hotel.hotelName,
           // 统一图片字段
-          coverImage: hotel.coverImage || hotel.image || hotel.img || hotel.pic,
+          coverImage: hotel.imgUrl || hotel.coverImage || hotel.image,
           // 统一最低价格字段
-          minPrice: hotel.minPrice || hotel.lowestPrice || hotel.price,
+          minPrice: hotel.minPrice || 0,
           // 统一评价数量字段
-          commentCount: hotel.commentCount || hotel.reviewCount,
+          commentCount: hotel.roomCount || hotel.commentCount || 0,
           // 设施字段
           facilities: facilities
         }
       })
 
-      // 前端设施筛选
-      if (filters.value.facilities.length > 0) {
-        processedHotels = processedHotels.filter(hotel => {
-          return filters.value.facilities.some(f => hotel.facilities.includes(f))
-        })
-      }
-
-      hotels.value = processedHotels
-      total.value = processedHotels.length
+      // 更新总数
+      total.value = data.total || 0
 
       // 获取每个酒店的房型最低价格
       await fetchHotelsMinPrice()
     } else {
-      ElMessage.error(res.msg || '搜索失败')
+      ElMessage.error(res.message || '搜索失败')
     }
   } catch (error) {
     console.error('搜索酒店失败:', error)
@@ -565,8 +573,13 @@ async function fetchHotelsMinPrice() {
       const res = await getHotelRooms(hotel.id)
       if (res.code === 200 && res.data && res.data.length > 0) {
         // 找到最低价格的房型
-        const minPrice = Math.min(...res.data.map(room => room.price || room.roomPrice || Infinity))
-        hotel.minPrice = minPrice === Infinity ? 0 : minPrice
+        const prices = res.data
+          .filter(room => room.status === '0') // 只统计上架的房型
+          .map(room => room.price || 0)
+          .filter(price => price > 0)
+        if (prices.length > 0) {
+          hotel.minPrice = Math.min(...prices)
+        }
       }
     } catch (error) {
       console.error(`获取酒店 ${hotel.id} 房型失败:`, error)
