@@ -34,9 +34,9 @@
         <el-button
           type="info"
           plain
-          icon="HomeFilled"
-          @click="goToFront"
-        >返回主页</el-button>
+          icon="ArrowLeft"
+          @click="goToMerchantList"
+        >返回商户列表</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -226,8 +226,8 @@ function getAuditStatusLabel(status) {
   return '未知'
 }
 
-function goToFront() {
-  router.push('/index')
+function goToMerchantList() {
+  router.push('/biz/merchant')
 }
 
 /** 查询审核记录列表 */

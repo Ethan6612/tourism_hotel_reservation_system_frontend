@@ -212,6 +212,14 @@ export function listMerchantComments(query) {
   })
 }
 
+// 评价详情
+export function getMerchantComment(id) {
+  return request({
+    url: '/api/merchant/comment/' + id,
+    method: 'get'
+  })
+}
+
 // 商家回复评价
 export function merchantReplyComment(id, replyContent) {
   return request({
@@ -227,6 +235,22 @@ export function appealComment(id, reason) {
     url: '/api/merchant/comment/' + id + '/appeal',
     method: 'put',
     params: { reason }
+  })
+}
+
+// 商户评价统计概览
+export function getMerchantCommentStatistics() {
+  return request({
+    url: '/api/merchant/comment/statistics',
+    method: 'get'
+  })
+}
+
+// 指定酒店评价统计
+export function getMerchantHotelCommentStatistics(hotelId) {
+  return request({
+    url: '/api/merchant/comment/statistics/hotel/' + hotelId,
+    method: 'get'
   })
 }
 

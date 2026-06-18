@@ -11,7 +11,7 @@ import usePermissionStore from '@/store/modules/permission'
 
 NProgress.configure({ showSpinner: false })
 
-const whiteList = ['/login', '/register', '/index', '/merchant/register']
+const whiteList = ['/login', '/register', '/index', '/merchant/register', '/merchant/pending']
 
 // ✅ 防止路由守卫重复执行的标记
 let isCheckingMerchant = false
@@ -54,10 +54,12 @@ router.beforeEach(async (to, from, next) => {
           const isAdmin = userRoles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
           const isMerchant = userRoles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
           
-          // 管理员和商家→控制台，普通用户→主页
+          // 管理员→控制台，商家→商户中心，普通用户→主页
           if (from.path === '/login') {
-            if ((isAdmin || isMerchant) && (to.path === '/index' || to.path === '/home')) {
+            if (isAdmin && (to.path === '/index' || to.path === '/home')) {
               next({ path: '/dashboard', replace: true })
+            } else if (isMerchant && (to.path === '/index' || to.path === '/home')) {
+              next({ path: '/biz/merchant', replace: true })
             } else if (!isAdmin && !isMerchant && to.path === '/dashboard') {
               next({ path: '/home', replace: true })
             } else {
@@ -78,6 +80,12 @@ router.beforeEach(async (to, from, next) => {
         const userRoles = useUserStore().roles
         const isMerchant = userRoles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
         
+        // 🔒 商户用户不能访问前台主页，重定向到商户中心
+        if (isMerchant && (to.path === '/index' || to.path === '/home')) {
+          next({ path: '/biz/merchant', replace: true })
+          return
+        }
+
         // 🔒 权限控制:商户用户不能访问纯管理员功能页面
         // 注意：/biz/merchant 是商户和管理员都可以访问的，只是显示的数据不同
         // /biz/merchantAudit 是只有管理员才能访问的审核功能
@@ -87,38 +95,40 @@ router.beforeEach(async (to, from, next) => {
         if (isMerchant && isAdminOnlyPage) {
           console.log('🚫 商户用户尝试访问管理员专属页面:', to.path)
           ElMessage.warning('您无权访问此页面')
-          next({ path: '/index', replace: true })
+          next({ path: '/dashboard', replace: true })
           return
         }
               
-        // ✅ 如果是商户用户且访问商户管理页面，需要实时检查商户登记状态
-        const isMerchantPage = to.path.startsWith('/biz/merchant') && !to.path.startsWith('/biz/merchantAudit')
-        
-        if (isMerchant && isMerchantPage) {
+        // ✅ 商户用户访问任何 /biz/* 管理页面时，都需要实时检查商户登记状态
+        // 排除：/biz/merchantAudit（管理员专属）、/merchant/register（注册页已在白名单）
+        const isMerchantBizPage = to.path.startsWith('/biz/') &&
+          !to.path.startsWith('/biz/merchantAudit')
+
+        if (isMerchant && isMerchantBizPage) {
           // ✅ 防止重复检查导致死循环
           if (isCheckingMerchant) {
             next()
             return
           }
-          
+
           isCheckingMerchant = true
-          
+
           try {
             // 获取当前用户ID
             const currentUserId = useUserStore().id || useUserStore().userId
-            
+
             // 动态导入API模块
             const { getMyMerchant, listMerchant } = await import('@/api/biz/merchant')
-            
+
             const response = await getMyMerchant()
             let merchantInfo = response.data
-            
+
             // ✅ 关键安全检查：验证商户归属
             if (merchantInfo && currentUserId && merchantInfo.userId !== currentUserId) {
               console.error('商户归属不匹配！')
               merchantInfo = null // 视为未登记
             }
-            
+
             // 如果没有找到商户信息，尝试从列表查询
             if (!merchantInfo) {
               try {
@@ -126,13 +136,13 @@ router.beforeEach(async (to, from, next) => {
                   pageNum: 1,
                   pageSize: 10
                 })
-                
+
                 if (listResponse.data && listResponse.data.list && listResponse.data.list.length > 0) {
                   // ✅ 关键：查找属于当前用户的商户
                   const myMerchant = listResponse.data.list.find(
                     merchant => merchant.userId === currentUserId
                   )
-                  
+
                   if (myMerchant) {
                     merchantInfo = myMerchant
                   }
@@ -141,47 +151,55 @@ router.beforeEach(async (to, from, next) => {
                 // 列表查询失败不影响主流程，继续判断
               }
             }
-            
-            // 判断是否有商户信息
+
+            // 🔴 未注册商户资料 → 跳转到注册页
             if (!merchantInfo) {
-              ElMessage.warning('您还未完成商户信息登记，请先完善商户信息')
-              isCheckingMerchant = false // ✅ 清除标记
+              ElMessage.warning('未找到关联的商户信息，请先完成商户注册')
+              isCheckingMerchant = false
               next({ path: '/merchant/register', replace: true })
               return
             }
-            
+
             // 检查审核状态
             const auditStatus = merchantInfo.auditStatus
-            
+
             if (auditStatus === '0' || auditStatus === 0) {
-              // 待审核
-              ElMessage.info('您的商户信息正在审核中，请耐心等待')
-              isCheckingMerchant = false // ✅ 清除标记
-              next() // 允许进入，但显示提示信息
+              // 🟡 待审核 → 只能查看商户主页，其他管理页面暂不可用
+              if (to.path === '/biz/merchant') {
+                // 允许进入商户主页（可查看和修改注册信息）
+                isCheckingMerchant = false
+                next()
+                return
+              }
+              // 其他 /biz/* 页面重定向到商户主页
+              ElMessage.info('您的商户信息正在审核中，审核通过后方可使用全部功能')
+              isCheckingMerchant = false
+              next({ path: '/biz/merchant', replace: true })
               return
             } else if (auditStatus === '2' || auditStatus === 2) {
-              // 审核驳回
+              // 🔴 审核驳回 → 跳转到注册页重新提交
               ElMessage.warning(`您的商户信息审核未通过\n驳回原因：${merchantInfo.rejectReason || '未知'}`)
-              isCheckingMerchant = false // ✅ 清除标记
+              isCheckingMerchant = false
               next({ path: '/merchant/register', replace: true })
               return
             } else if (auditStatus === '1' || auditStatus === 1) {
-              // 审核通过
-              isCheckingMerchant = false // ✅ 清除标记
+              // 🟢 审核通过 → 允许进入
+              isCheckingMerchant = false
               next()
               return
             } else {
               // 未知状态
               ElMessage.warning('商户状态异常，请联系管理员')
-              isCheckingMerchant = false // ✅ 清除标记
-              next({ path: '/index', replace: true })
+              isCheckingMerchant = false
+              next({ path: '/dashboard', replace: true })
               return
             }
           } catch (error) {
             console.error('检查商户登记状态失败:', error.message)
-            // API失败时容错放行，让页面自己处理
-            isCheckingMerchant = false // ✅ 清除标记
-            next()
+            // API失败时容错：提示用户稍后重试，不直接放行
+            ElMessage.error('获取商户信息失败，请稍后重试')
+            isCheckingMerchant = false
+            next({ path: '/dashboard', replace: true })
             return
           }
         }

@@ -80,11 +80,72 @@ export const constantRoutes = [
     hidden: true
   },
   {
-    path: '/biz/comment',
-    component: () => import('@/views/biz/comment/index'),
+    path: '/merchant/pending',
+    component: () => import('@/views/biz/merchant/pending'),
     hidden: true,
-    name: 'BizComment',
-    meta: { title: '评价管理' }
+    name: 'MerchantPending',
+    meta: { title: '审核等待中' }
+  },
+  {
+    path: '/biz/merchantAudit',
+    component: Layout,
+    hidden: true,
+    name: 'BizMerchantAudit',
+    meta: { title: '商户审核', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/merchant/audit'),
+        name: 'BizMerchantAuditIndex',
+        meta: { title: '商户审核', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
+    path: '/biz',
+    component: Layout,
+    redirect: '/biz/merchant',
+    alwaysShow: true,
+    name: 'Biz',
+    meta: { title: '业务管理', icon: 'system', roles: ['merchant', 'ROLE_MERCHANT'] },
+    children: [
+      {
+        path: 'merchant',
+        component: () => import('@/views/biz/merchant/index'),
+        name: 'BizMerchant',
+        meta: { title: '商户中心', icon: 'home' }
+      },
+      {
+        path: 'hotel',
+        component: () => import('@/views/biz/hotel/index'),
+        name: 'BizHotel',
+        meta: { title: '酒店管理', icon: 'building' }
+      },
+      {
+        path: 'room',
+        component: () => import('@/views/biz/room/index'),
+        name: 'BizRoom',
+        meta: { title: '房型管理', icon: 'component' }
+      },
+      {
+        path: 'comment',
+        component: () => import('@/views/biz/comment/index'),
+        name: 'BizComment',
+        meta: { title: '评价管理', icon: 'star' }
+      },
+      {
+        path: 'statistics',
+        component: () => import('@/views/biz/statistics/index'),
+        name: 'BizStatistics',
+        meta: { title: '数据统计', icon: 'chart' }
+      },
+      {
+        path: 'notice',
+        component: () => import('@/views/biz/notice/index'),
+        name: 'BizNotice',
+        meta: { title: '通知中心', icon: 'message' }
+      }
+    ]
   },
   {
     path: "/:pathMatch(.*)*",
@@ -105,7 +166,7 @@ export const constantRoutes = [
         path: '/dashboard',
         component: () => import('@/views/index'),
         name: 'Dashboard',
-        meta: { title: '首页', icon: 'dashboard', affix: true }
+        meta: { title: '首页', icon: 'dashboard', affix: true, roles: ['admin', 'ROLE_ADMIN'] }
       }
     ]
   },

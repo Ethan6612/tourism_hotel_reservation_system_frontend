@@ -330,7 +330,10 @@ function submitForm() {
         localStorage.removeItem('merchantDraft')
 
         setTimeout(() => {
-          router.push('/index')
+          // 商户提交后跳转到管理控制台，普通用户回到主页
+          const roles = userStore.roles || []
+          const isMerchantUser = roles.some(r => r === 'merchant' || r === 'ROLE_MERCHANT')
+          router.push(isMerchantUser ? '/dashboard' : '/index')
         }, 1500)
       } catch (error) {
         console.error('提交失败:', error)
