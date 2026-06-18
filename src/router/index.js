@@ -80,6 +80,13 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/biz/comment',
+    component: () => import('@/views/biz/comment/index'),
+    hidden: true,
+    name: 'BizComment',
+    meta: { title: '评价管理' }
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true
