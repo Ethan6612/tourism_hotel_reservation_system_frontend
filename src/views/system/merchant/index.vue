@@ -95,6 +95,9 @@
       </el-table-column>
     </el-table>
 
+    <!-- 空数据提示 -->
+    <el-empty v-if="!loading && merchantList.length === 0" description="暂无商户数据，请检查搜索条件或稍后再试" :image-size="120" />
+
     <!-- 分页 -->
     <pagination
       v-show="total > 0"
@@ -166,8 +169,10 @@ function getList(paginationParams) {
   listMerchant(queryParams.value).then(response => {
     merchantList.value = response.data.rows || response.data.list || []
     total.value = response.data.total || 0
-  }).catch(() => {
-    proxy.$modal.msgError('查询失败')
+  }).catch((error) => {
+    console.error('商户列表查询失败:', error)
+    const msg = error?.response?.data?.msg || error?.message || '查询失败'
+    proxy.$modal.msgError('获取商户列表失败：' + msg)
   }).finally(() => {
     loading.value = false
   })

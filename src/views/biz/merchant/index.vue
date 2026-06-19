@@ -130,12 +130,20 @@
 </template>
 
 <script setup name="MerchantCenter">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyMerchant, updateMerchant } from '@/api/biz/merchant'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
 const router = useRouter()
+const userStore = useUserStore()
+
+// 管理员检测：管理员应使用 /system/merchant 而非商户中心
+const isAdmin = computed(() => {
+  const roles = userStore.roles || []
+  return roles.some(r => r === 'admin' || r === 'ROLE_ADMIN')
+})
 
 const loading = ref(true)
 const editOpen = ref(false)
@@ -257,6 +265,11 @@ function submitEdit() {
 }
 
 onMounted(() => {
+  // 管理员应使用 /system/merchant 查看全平台商户
+  if (isAdmin.value) {
+    router.replace('/system/merchant')
+    return
+  }
   loadMerchantInfo()
 })
 </script>

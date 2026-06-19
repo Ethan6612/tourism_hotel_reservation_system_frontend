@@ -78,6 +78,7 @@ router.beforeEach(async (to, from, next) => {
       } else {
         // 已有用户信息和路由,检查商户登记状态
         const userRoles = useUserStore().roles
+        const isAdmin = userRoles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
         const isMerchant = userRoles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
         
         // 🔒 商户用户不能访问前台主页，重定向到商户中心
@@ -104,7 +105,7 @@ router.beforeEach(async (to, from, next) => {
         const isMerchantBizPage = to.path.startsWith('/biz/') &&
           !to.path.startsWith('/biz/merchantAudit')
 
-        if (isMerchant && isMerchantBizPage) {
+        if (isMerchant && isMerchantBizPage && !isAdmin) {
           // ✅ 防止重复检查导致死循环
           if (isCheckingMerchant) {
             next()

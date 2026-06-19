@@ -79,7 +79,19 @@
               <div class="card-actions">
                 <el-tooltip content="详情"><el-button link type="primary" icon="View" @click="handleView(item)" /></el-tooltip>
                 <el-tooltip v-if="!item.replyContent" content="回复"><el-button link type="primary" icon="ChatDotRound" @click="handleReply(item)" /></el-tooltip>
-                <el-tooltip v-if="!item.appealStatus || item.appealStatus === '3'" content="申诉"><el-button link type="warning" icon="WarningFilled" @click="handleAppeal(item)" /></el-tooltip>
+                <!-- 商户操作 -->
+                <template v-if="!isAdmin">
+                  <el-tooltip v-if="!item.appealStatus || item.appealStatus === '3'" content="申诉"><el-button link type="warning" icon="WarningFilled" @click="handleAppeal(item)" /></el-tooltip>
+                </template>
+                <!-- 管理员操作 -->
+                <template v-if="isAdmin">
+                  <el-tooltip content="审核通过"><el-button link type="success" icon="CircleCheck" @click="handleAudit(item, 1)" /></el-tooltip>
+                  <el-tooltip content="审核拒绝"><el-button link type="danger" icon="CircleClose" @click="handleAudit(item, 2)" /></el-tooltip>
+                  <template v-if="item.appealStatus === '1'">
+                    <el-tooltip content="通过申诉"><el-button link type="success" icon="CircleCheckFilled" @click="handleAuditAppeal(item, 2)" /></el-tooltip>
+                    <el-tooltip content="驳回申诉"><el-button link type="danger" icon="CircleCloseFilled" @click="handleAuditAppeal(item, 3)" /></el-tooltip>
+                  </template>
+                </template>
               </div>
             </div>
             <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="loadComments" />
@@ -125,7 +137,17 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowRight } from '@element-plus/icons-vue'
-import { listMerchantComments, getMerchantComment, merchantReplyComment, appealComment, getMerchantCommentStatistics } from '@/api/biz/comment'
+import {
+  listMerchantComments, getMerchantComment, merchantReplyComment, appealComment, getMerchantCommentStatistics,
+  listCommentGroupByHotel, listCommentByHotel, getComment, replyComment, auditComment, auditAppeal
+} from '@/api/biz/comment'
+import useUserStore from '@/store/modules/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => {
+  const roles = userStore.roles || []
+  return roles.some(r => r === 'admin' || r === 'ROLE_ADMIN')
+})
 
 // 酒店列表
 const hotelSearch = ref('')
@@ -166,10 +188,19 @@ async function loadComments(paginationParams) {
       score: scoreFilter.value || undefined,
       keyword: searchKeyword.value || undefined
     }
-    const res = await listMerchantComments(params)
-    const rows = res.data?.rows || res.data?.list || res.rows || res.data || []
-    commentList.value = (Array.isArray(rows) ? rows : []).map(item => ({ ...item, expanded: false }))
-    total.value = res.data?.total || res.total || 0
+    if (isAdmin.value) {
+      // 管理员：按酒店查询评价
+      const res = await listCommentByHotel(params.hotelId, { pageNum: params.pageNum, pageSize: params.pageSize, score: params.score, keyword: params.keyword })
+      const rows = res.data?.rows || res.data?.list || res.rows || res.data || []
+      commentList.value = (Array.isArray(rows) ? rows : []).map(item => ({ ...item, expanded: false }))
+      total.value = res.data?.total || res.total || 0
+    } else {
+      // 商户：查询本商户下酒店评价
+      const res = await listMerchantComments(params)
+      const rows = res.data?.rows || res.data?.list || res.rows || res.data || []
+      commentList.value = (Array.isArray(rows) ? rows : []).map(item => ({ ...item, expanded: false }))
+      total.value = res.data?.total || res.total || 0
+    }
   } finally { commentLoading.value = false }
 }
 
@@ -177,7 +208,10 @@ async function loadComments(paginationParams) {
 const viewOpen = ref(false)
 const viewForm = ref({})
 async function handleView(row) {
-  try { const res = await getMerchantComment(row.id); viewForm.value = res.data || res } catch { viewForm.value = row }
+  try {
+    const res = isAdmin.value ? await getComment(row.id) : await getMerchantComment(row.id)
+    viewForm.value = res.data || res
+  } catch { viewForm.value = row }
   viewOpen.value = true
 }
 
@@ -191,7 +225,11 @@ function handleReply(row) { currentComment.value = row; replyForm.value.replyCon
 async function submitReply() {
   try {
     await replyRef.value.validate()
-    await merchantReplyComment(currentComment.value.id, replyForm.value.replyContent)
+    if (isAdmin.value) {
+      await replyComment(currentComment.value.id, replyForm.value.replyContent)
+    } else {
+      await merchantReplyComment(currentComment.value.id, replyForm.value.replyContent)
+    }
     ElMessage.success('回复成功')
     replyOpen.value = false
     loadComments()
@@ -216,13 +254,51 @@ async function submitAppeal() {
   } catch { /* validation fail or cancel */ }
 }
 
-// 加载酒店列表（商户专用统计接口）
+// 管理员：审核评价（通过/拒绝）
+async function handleAudit(row, status) {
+  const actionText = status === 1 ? '通过' : '拒绝'
+  try {
+    await ElMessageBox.confirm(
+      `确认${actionText}该评价？`,
+      '审核确认',
+      { confirmButtonText: `确定${actionText}`, cancelButtonText: '取消', type: 'warning' }
+    )
+    await auditComment(row.id, status)
+    ElMessage.success(`评价已${actionText}`)
+    loadComments()
+  } catch { /* cancel */ }
+}
+
+// 管理员：审核申诉
+async function handleAuditAppeal(row, status) {
+  const actionText = status === 2 ? '通过申诉' : '驳回申诉'
+  try {
+    const { value } = await ElMessageBox.prompt(
+      `${actionText}备注（可选）`,
+      '申诉审核',
+      { confirmButtonText: '确定', cancelButtonText: '取消' }
+    )
+    await auditAppeal(row.id, status, value || '')
+    ElMessage.success(`申诉已${status === 2 ? '通过' : '驳回'}`)
+    loadComments()
+  } catch { /* cancel */ }
+}
+
+// 加载酒店列表（管理员：全平台统计；商户：本商户统计）
 async function loadHotelList() {
   hotelLoading.value = true
   try {
-    const res = await getMerchantCommentStatistics()
-    const list = res.data || res.rows || []
-    allHotels.value = Array.isArray(list) ? list : []
+    if (isAdmin.value) {
+      // 管理员：获取全平台所有酒店按酒店分组统计
+      const res = await listCommentGroupByHotel()
+      const list = res.data || res.rows || res || []
+      allHotels.value = Array.isArray(list) ? list : []
+    } else {
+      // 商户：获取本商户下酒店统计
+      const res = await getMerchantCommentStatistics()
+      const list = res.data || res.rows || []
+      allHotels.value = Array.isArray(list) ? list : []
+    }
     if (allHotels.value.length > 0 && !currentHotelId.value) selectHotel(allHotels.value[0])
   } finally { hotelLoading.value = false }
 }

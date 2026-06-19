@@ -182,6 +182,21 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/system/comment',
+    component: Layout,
+    hidden: true,
+    name: 'SystemComment',
+    meta: { title: '评价管理', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/comment/index'),
+        name: 'SystemCommentIndex',
+        meta: { title: '评价管理', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true
