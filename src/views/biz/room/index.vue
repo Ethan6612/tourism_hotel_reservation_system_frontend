@@ -36,7 +36,7 @@
       <el-table-column label="ID" align="center" prop="id" width="60" />
       <el-table-column label="房型图片" align="center" prop="imgUrl" width="100">
         <template #default="scope">
-          <el-image v-if="scope.row.imgUrl" :src="scope.row.imgUrl" style="width: 60px; height: 45px; border-radius: 4px" fit="cover" :preview-src-list="[scope.row.imgUrl]" />
+          <el-image v-if="scope.row.imgUrl" :src="scope.row.imgUrl" style="width: 60px; height: 45px; border-radius: 4px" fit="cover" :preview-src-list="[scope.row.imgUrl]" preview-teleported />
           <span v-else style="color: #ccc">无图片</span>
         </template>
       </el-table-column>

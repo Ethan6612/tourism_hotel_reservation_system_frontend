@@ -102,6 +102,19 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '',
+    component: Layout,
+    redirect: '/index',
+    children: [
+      {
+        path: '/dashboard',
+        component: () => import('@/views/index'),
+        name: 'Dashboard',
+        meta: { title: '首页', icon: 'dashboard', affix: true, roles: ['admin', 'ROLE_ADMIN', 'merchant', 'ROLE_MERCHANT'] }
+      }
+    ]
+  },
+  {
     path: '/biz',
     component: Layout,
     redirect: '/biz/merchant',
@@ -144,6 +157,27 @@ export const constantRoutes = [
         component: () => import('@/views/biz/notice/index'),
         name: 'BizNotice',
         meta: { title: '通知中心', icon: 'message' }
+      },
+      {
+        path: 'statistics/report',
+        component: () => import('@/views/biz/statistics/report'),
+        name: 'BizStatisticsReport',
+        meta: { title: '营收报表', icon: 'documentation' }
+      }
+    ]
+  },
+  {
+    path: '/system/merchant',
+    component: Layout,
+    hidden: true,
+    name: 'SystemMerchant',
+    meta: { title: '商户管理', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/system/merchant/index'),
+        name: 'SystemMerchantIndex',
+        meta: { title: '商户管理', roles: ['admin', 'ROLE_ADMIN'] }
       }
     ]
   },
@@ -156,19 +190,6 @@ export const constantRoutes = [
     path: '/401',
     component: () => import('@/views/error/401'),
     hidden: true
-  },
-  {
-    path: '',
-    component: Layout,
-    redirect: '/index',
-    children: [
-      {
-        path: '/dashboard',
-        component: () => import('@/views/index'),
-        name: 'Dashboard',
-        meta: { title: '首页', icon: 'dashboard', affix: true, roles: ['admin', 'ROLE_ADMIN'] }
-      }
-    ]
   },
   {
     path: '/user',

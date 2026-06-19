@@ -94,6 +94,30 @@
       </el-col>
     </el-row>
 
+    <!-- 近7天趋势图表 -->
+    <el-row :gutter="20" class="charts-row">
+      <el-col :xs="24" :md="12">
+        <el-card class="chart-box">
+          <template #header>
+            <div class="chart-header">
+              <span>📈 近7天收入趋势</span>
+            </div>
+          </template>
+          <div ref="revenueTrendChartRef" class="chart-container"></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :md="12">
+        <el-card class="chart-box">
+          <template #header>
+            <div class="chart-header">
+              <span>📊 近7天订单趋势</span>
+            </div>
+          </template>
+          <div ref="orderTrendChartRef" class="chart-container"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <!-- 图表区域 -->
     <el-row :gutter="20" class="charts-row">
       <el-col :xs="24" :md="12">
@@ -150,6 +174,8 @@ const { proxy } = getCurrentInstance()
 
 const statsLoading = ref(false)
 const scoreChartRef = ref(null)
+const revenueTrendChartRef = ref(null)
+const orderTrendChartRef = ref(null)
 const commentStats = ref([])
 
 const dashboard = ref({
@@ -181,6 +207,9 @@ async function loadDashboard() {
     if (res.data) {
       dashboard.value = res.data
     }
+    await nextTick()
+    initRevenueTrendChart()
+    initOrderTrendChart()
   } catch (err) {
     console.error('加载仪表盘数据失败:', err)
   }
@@ -196,6 +225,56 @@ async function loadCommentStats() {
     initScoreChart()
   } catch { /* ignore */ }
   statsLoading.value = false
+}
+
+function initRevenueTrendChart() {
+  if (!revenueTrendChartRef.value) return
+  const chart = echarts.init(revenueTrendChartRef.value)
+  const trend = dashboard.value.revenueTrend || []
+  const dates = trend.map(t => t.date || '')
+  const revenues = trend.map(t => Number(t.revenue || 0))
+
+  chart.setOption({
+    tooltip: { trigger: 'axis', formatter: p => `${p[0].axisValue}<br/>收入: ¥${Number(p[0].value).toLocaleString()}` },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: dates.length > 0 ? dates : ['暂无数据'], axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', name: '收入(元)', axisLabel: { formatter: v => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v } },
+    series: [{
+      name: '收入', type: 'line', smooth: true,
+      data: dates.length > 0 ? revenues : [0],
+      symbol: 'circle', symbolSize: 6,
+      itemStyle: { color: '#f56c6c' },
+      lineStyle: { width: 2, color: '#f56c6c' },
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1,
+        [{ offset: 0, color: 'rgba(245,108,108,0.25)' }, { offset: 1, color: 'rgba(245,108,108,0.02)' }]) }
+    }]
+  })
+  window.addEventListener('resize', () => chart.resize())
+}
+
+function initOrderTrendChart() {
+  if (!orderTrendChartRef.value) return
+  const chart = echarts.init(orderTrendChartRef.value)
+  const trend = dashboard.value.orderCountTrend || []
+  const dates = trend.map(t => t.date || '')
+  const counts = trend.map(t => Number(t.orderCount || 0))
+
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: dates.length > 0 ? dates : ['暂无数据'], axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', name: '订单数', minInterval: 1 },
+    series: [{
+      name: '订单数', type: 'line', smooth: true,
+      data: dates.length > 0 ? counts : [0],
+      symbol: 'circle', symbolSize: 6,
+      itemStyle: { color: '#409eff' },
+      lineStyle: { width: 2, color: '#409eff' },
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1,
+        [{ offset: 0, color: 'rgba(64,158,255,0.25)' }, { offset: 1, color: 'rgba(64,158,255,0.02)' }]) }
+    }]
+  })
+  window.addEventListener('resize', () => chart.resize())
 }
 
 function initScoreChart() {

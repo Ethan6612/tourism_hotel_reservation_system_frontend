@@ -42,12 +42,15 @@
       <el-table-column label="ID" align="center" prop="id" width="60" />
       <el-table-column label="酒店图片" align="center" prop="imgUrl" width="100">
         <template #default="scope">
-          <el-image v-if="scope.row.imgUrl" :src="scope.row.imgUrl" style="width: 60px; height: 45px; border-radius: 4px" fit="cover" :preview-src-list="[scope.row.imgUrl]" />
-          <span v-else style="color: #ccc">无图片</span>
+          <span @click.stop>
+            <el-image v-if="scope.row.imgUrl" :src="scope.row.imgUrl" style="width: 60px; height: 45px; border-radius: 4px" fit="cover" :preview-src-list="[scope.row.imgUrl]" preview-teleported />
+            <span v-else style="color: #ccc">无图片</span>
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="酒店名称" align="center" prop="name" :show-overflow-tooltip="true" min-width="140" />
       <el-table-column label="地址" align="center" prop="address" :show-overflow-tooltip="true" min-width="160" />
+      <el-table-column label="设施" align="center" prop="facility" :show-overflow-tooltip="true" min-width="140" />
       <el-table-column label="星级" align="center" prop="star" width="100">
         <template #default="scope">
           <el-rate :model-value="scope.row.star || 0" disabled size="small" />
@@ -108,13 +111,6 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="评分" prop="score">
-              <el-input-number v-model="form.score" :min="0" :max="5" :precision="1" :step="0.1" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="图片URL" prop="imgUrl">
               <el-input v-model="form.imgUrl" placeholder="请输入酒店图片URL" />
@@ -149,7 +145,7 @@
         <el-descriptions-item label="酒店地址" :span="2">{{ detailForm.address }}</el-descriptions-item>
         <el-descriptions-item label="设施" :span="2">{{ detailForm.facility || '暂无' }}</el-descriptions-item>
         <el-descriptions-item label="图片" :span="2">
-          <el-image v-if="detailForm.imgUrl" :src="detailForm.imgUrl" style="width: 200px; height: 120px; border-radius: 6px" fit="cover" :preview-src-list="[detailForm.imgUrl]" />
+          <el-image v-if="detailForm.imgUrl" :src="detailForm.imgUrl" style="width: 200px; height: 120px; border-radius: 6px" fit="cover" :preview-src-list="[detailForm.imgUrl]" preview-teleported />
           <span v-else>无图片</span>
         </el-descriptions-item>
         <el-descriptions-item label="状态">
@@ -190,7 +186,6 @@ const form = ref({
   name: '',
   address: '',
   star: 3,
-  score: undefined,
   imgUrl: '',
   facility: ''
 })
@@ -222,7 +217,6 @@ function reset() {
     name: '',
     address: '',
     star: 3,
-    score: undefined,
     imgUrl: '',
     facility: ''
   }
