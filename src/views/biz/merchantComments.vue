@@ -53,6 +53,18 @@
 
             <p class="card-text">{{ item.content }}</p>
 
+            <!-- 点赞数 -->
+            <div class="likes-bar">
+              <span class="likes-count" @click="showLikes(item)" v-if="(item.likeCount || 0) > 0">
+                <svg class="like-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m7-2V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14Z"/></svg>
+                {{ item.likeCount }} 人赞过
+              </span>
+              <span class="likes-count muted" v-else>
+                <svg class="like-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m7-2V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14Z"/></svg>
+                {{ item.likeCount || 0 }}
+              </span>
+            </div>
+
             <!-- 图片 -->
             <div class="card-images" v-if="parseImages(item.images).length > 0">
               <el-image
@@ -147,6 +159,18 @@
       </template>
     </el-dialog>
 
+    <!-- ========== 点赞列表对话框 ========== -->
+    <el-dialog title="👍 点赞详情" v-model="likesOpen" width="420px" append-to-body>
+      <div v-if="likesList.length > 0" class="likes-list">
+        <div v-for="u in likesList" :key="u.id" class="likes-user">
+          <span class="likes-avatar">{{ getInitial(u.userName || '用户') }}</span>
+          <span class="likes-name">{{ u.userName || '用户' }}</span>
+          <span class="likes-time">{{ u.createTime }}</span>
+        </div>
+      </div>
+      <el-empty v-else description="暂无点赞" :image-size="80" />
+    </el-dialog>
+
     <!-- ========== 申诉对话框 ========== -->
     <el-dialog title="申诉评价" v-model="appealOpen" width="550px" append-to-body>
       <div class="reply-preview">
@@ -170,7 +194,7 @@
 <script setup name="MerchantComments">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { listMerchantComments, appealComment, merchantReplyComment } from '@/api/biz/comment'
+import { listMerchantComments, appealComment, merchantReplyComment, getCommentLikes } from '@/api/biz/comment'
 
 const loading = ref(false)
 const commentList = ref([])
@@ -191,6 +215,10 @@ const replyOpen = ref(false)
 const replyRef = ref(null)
 const currentComment = ref({})
 const replyForm = ref({ replyContent: '' })
+
+// 点赞列表
+const likesOpen = ref(false)
+const likesList = ref([])
 
 // 申诉
 const appealOpen = ref(false)
@@ -224,6 +252,14 @@ function parseImages(images) {
     const arr = JSON.parse(images)
     return Array.isArray(arr) ? arr : []
   } catch { return images ? [images] : [] }
+}
+
+async function showLikes(item) {
+  try {
+    const res = await getCommentLikes(item.id)
+    likesList.value = res.data || []
+    likesOpen.value = true
+  } catch { likesList.value = [] }
 }
 
 function handleQuery(page) {
@@ -553,5 +589,80 @@ onMounted(() => { loadComments() })
   font-size: 14px;
   color: #555;
   line-height: 1.6;
+}
+
+/* 点赞 */
+.likes-bar {
+  margin: 8px 0;
+}
+
+.likes-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 2px 10px;
+  background: #fafafa;
+  border-radius: 12px;
+}
+
+.likes-count:hover {
+  color: #e74c3c;
+  background: #fef2f2;
+}
+
+.likes-count.muted {
+  cursor: default;
+  color: #ccc;
+  background: transparent;
+}
+
+.likes-count.muted:hover {
+  color: #ccc;
+  background: transparent;
+}
+
+.like-svg {
+  flex-shrink: 0;
+}
+
+.likes-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.likes-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.likes-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.likes-name {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.likes-time {
+  font-size: 12px;
+  color: #bbb;
 }
 </style>

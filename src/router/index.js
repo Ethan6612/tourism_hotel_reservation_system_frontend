@@ -142,7 +142,7 @@ export const constantRoutes = [
       },
       {
         path: 'comment',
-        component: () => import('@/views/biz/comment/index'),
+        component: () => import('@/views/biz/merchantComments'),
         name: 'BizComment',
         meta: { title: '评价管理', icon: 'star' }
       },

@@ -165,7 +165,7 @@ export function getHotelsAverageScore(hotelIds) {
 
 // ==================== 互动接口 ====================
 
-// 点赞评价
+// 点赞/取消点赞（切换式）
 export function likeComment(id) {
   return request({
     url: '/api/comment/' + id + '/like',
@@ -173,11 +173,11 @@ export function likeComment(id) {
   })
 }
 
-// 取消点赞
-export function unlikeComment(id) {
+// 查询点赞用户列表
+export function getCommentLikes(id) {
   return request({
-    url: '/api/comment/' + id + '/unlike',
-    method: 'post'
+    url: '/api/comment/' + id + '/likes',
+    method: 'get'
   })
 }
 
