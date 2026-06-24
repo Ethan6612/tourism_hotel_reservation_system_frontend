@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <!-- 搜索栏 -->
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
       <el-form-item label="商户名称" prop="merchantName">
         <el-input v-model="queryParams.merchantName" placeholder="请输入商户名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
@@ -43,6 +43,19 @@
     <el-table v-loading="loading" :data="merchantList" stripe @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="ID" prop="id" width="70" align="center" />
+      <el-table-column label="商户Logo" align="center" width="90">
+        <template #default="scope">
+          <el-image
+            v-if="scope.row.logoUrl"
+            :src="scope.row.logoUrl"
+            style="width: 50px; height: 50px; border-radius: 4px;"
+            fit="contain"
+            :preview-src-list="[scope.row.logoUrl]"
+            preview-teleported
+          />
+          <span v-else style="color: #999; font-size: 12px;">暂无</span>
+        </template>
+      </el-table-column>
       <el-table-column label="商户名称" prop="merchantName" min-width="150" :show-overflow-tooltip="true" />
       <el-table-column label="营业执照号" prop="licenseNo" min-width="160" :show-overflow-tooltip="true" />
       <el-table-column label="法人" prop="legalPerson" width="100" />
@@ -110,6 +123,17 @@
     <!-- 商户详情弹窗 -->
     <el-dialog :title="'商户详情 - ' + (detail.merchantName || '')" v-model="detailOpen" width="700px" append-to-body>
       <el-descriptions :column="2" border>
+        <el-descriptions-item label="商户Logo" :span="2">
+          <el-image
+            v-if="detail.logoUrl"
+            :src="detail.logoUrl"
+            style="width: 120px; height: 120px; border-radius: 8px;"
+            fit="contain"
+            :preview-src-list="[detail.logoUrl]"
+            preview-teleported
+          />
+          <span v-else>暂无</span>
+        </el-descriptions-item>
         <el-descriptions-item label="商户ID">{{ detail.id }}</el-descriptions-item>
         <el-descriptions-item label="商户名称">{{ detail.merchantName }}</el-descriptions-item>
         <el-descriptions-item label="营业执照号">{{ detail.licenseNo }}</el-descriptions-item>

@@ -100,12 +100,12 @@ router.beforeEach(async (to, from, next) => {
           return
         }
               
-        // ✅ 商户用户访问任何 /biz/* 管理页面时，都需要实时检查商户登记状态
+        // ✅ 商户用户访问任何 /biz/* 管理页面或 /dashboard 时，都需要实时检查商户登记状态
         // 排除：/biz/merchantAudit（管理员专属）、/merchant/register（注册页已在白名单）
         const isMerchantBizPage = to.path.startsWith('/biz/') &&
           !to.path.startsWith('/biz/merchantAudit')
 
-        if (isMerchant && isMerchantBizPage && !isAdmin) {
+        if (isMerchant && (isMerchantBizPage || to.path === '/dashboard') && !isAdmin) {
           // ✅ 防止重复检查导致死循环
           if (isCheckingMerchant) {
             next()
