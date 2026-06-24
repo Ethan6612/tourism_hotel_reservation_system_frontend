@@ -79,7 +79,15 @@
             </div>
 
             <div class="card-footer">
-              <span class="footer-like">👍 {{ item.likeCount || 0 }}</span>
+              <span class="footer-like" :class="{ liked: item._liked }" @click="handleLike(item)">
+                <svg class="like-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m7-2V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14Z"/>
+                </svg>
+                <span>{{ item.likeCount || 0 }}</span>
+              </span>
+              <span class="likes-detail" @click="handleShowLikes(item)" v-if="(item.likeCount || 0) > 0">
+                谁赞过
+              </span>
               <div class="footer-actions">
                 <el-button link type="primary" size="small" @click="handleView(item)">详情</el-button>
                 <el-button link type="primary" size="small" @click="handleEdit(item)" v-if="item.status === '1'">修改</el-button>
@@ -96,6 +104,18 @@
         <el-button type="primary" @click="goHome">去看看酒店</el-button>
       </el-empty>
     </div>
+
+    <!-- ========== 点赞列表对话框 ========== -->
+    <el-dialog title="👍 点赞详情" v-model="likesOpen" width="420px" append-to-body>
+      <div v-if="likesList.length > 0" class="likes-list">
+        <div v-for="u in likesList" :key="u.id" class="likes-user">
+          <span class="likes-avatar">{{ getInitial(u.userName || '用户') }}</span>
+          <span class="likes-name">{{ u.userName || '用户' }}</span>
+          <span class="likes-time">{{ u.createTime }}</span>
+        </div>
+      </div>
+      <el-empty v-else description="暂无点赞" :image-size="80" />
+    </el-dialog>
 
     <!-- ========== 查看详情对话框 ========== -->
     <el-dialog title="评价详情" v-model="viewOpen" width="600px" append-to-body>
@@ -128,7 +148,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { listMyComments, deleteMyComment, myCommentStatistics } from '@/api/biz/comment'
+import { listMyComments, deleteMyComment, myCommentStatistics, likeComment, getCommentLikes } from '@/api/biz/comment'
 
 const router = useRouter()
 
@@ -141,6 +161,8 @@ const stats = ref({ total: 0, avgScore: 0, likedCount: 0 })
 
 const viewOpen = ref(false)
 const viewForm = ref({})
+const likesOpen = ref(false)
+const likesList = ref([])
 
 const filteredComments = computed(() => {
   let list = allComments.value
@@ -178,6 +200,31 @@ async function handleDelete(item) {
     ElMessage.success('评价已删除')
     loadData()
   } catch { /* 取消 */ }
+}
+
+function getInitial(name) {
+  return (name || '用').charAt(0)
+}
+
+async function handleLike(item) {
+  try {
+    const res = await likeComment(item.id)
+    if (res.msg && res.msg.includes('取消')) {
+      item._liked = false
+      item.likeCount = Math.max(0, (item.likeCount || 0) - 1)
+    } else {
+      item._liked = true
+      item.likeCount = (item.likeCount || 0) + 1
+    }
+  } catch { /* 错误已处理 */ }
+}
+
+async function handleShowLikes(item) {
+  try {
+    const res = await getCommentLikes(item.id)
+    likesList.value = res.data || []
+    likesOpen.value = true
+  } catch { likesList.value = [] }
 }
 
 function parseImages(images) {
@@ -417,5 +464,88 @@ onMounted(() => { loadData() })
   background: #f9f9f9;
   padding: 12px;
   border-radius: 8px;
+}
+
+/* 点赞 */
+.footer-like {
+  cursor: pointer;
+  font-size: 14px;
+  color: #999;
+  transition: all 0.2s;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.footer-like:hover {
+  color: #e74c3c;
+}
+
+.footer-like:hover .like-emoji {
+  transform: scale(1.2);
+}
+
+.footer-like.liked {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.footer-like.liked .like-emoji {
+  filter: none;
+}
+
+.like-icon {
+  display: inline-block;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.likes-detail {
+  font-size: 12px;
+  color: #409eff;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.likes-detail:hover {
+  text-decoration: underline;
+}
+
+.likes-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.likes-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.likes-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.likes-name {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.likes-time {
+  font-size: 12px;
+  color: #bbb;
 }
 </style>

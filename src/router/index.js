@@ -80,14 +80,26 @@ export const constantRoutes = [
     hidden: true
   },
   {
-    path: "/:pathMatch(.*)*",
-    component: () => import('@/views/error/404'),
-    hidden: true
+    path: '/merchant/pending',
+    component: () => import('@/views/biz/merchant/pending'),
+    hidden: true,
+    name: 'MerchantPending',
+    meta: { title: '审核等待中' }
   },
   {
-    path: '/401',
-    component: () => import('@/views/error/401'),
-    hidden: true
+    path: '/biz/merchantAudit',
+    component: Layout,
+    hidden: true,
+    name: 'BizMerchantAudit',
+    meta: { title: '商户审核', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/merchant/audit'),
+        name: 'BizMerchantAuditIndex',
+        meta: { title: '商户审核', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
   },
   {
     path: '',
@@ -98,9 +110,49 @@ export const constantRoutes = [
         path: '/dashboard',
         component: () => import('@/views/index'),
         name: 'Dashboard',
-        meta: { title: '首页', icon: 'dashboard', affix: true }
+        meta: { title: '首页', icon: 'dashboard', affix: true, roles: ['admin', 'ROLE_ADMIN', 'merchant', 'ROLE_MERCHANT'] }
       }
     ]
+  },
+  {
+    path: '/system/merchant',
+    component: Layout,
+    hidden: true,
+    name: 'SystemMerchant',
+    meta: { title: '商户管理', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/system/merchant/index'),
+        name: 'SystemMerchantIndex',
+        meta: { title: '商户管理', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
+    path: '/system/comment',
+    component: Layout,
+    hidden: true,
+    name: 'SystemComment',
+    meta: { title: '评价管理', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/comment/index'),
+        name: 'SystemCommentIndex',
+        meta: { title: '评价管理', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    component: () => import('@/views/error/404'),
+    hidden: true
+  },
+  {
+    path: '/401',
+    component: () => import('@/views/error/401'),
+    hidden: true
   },
   {
     path: '/user',

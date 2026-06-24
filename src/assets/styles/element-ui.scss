@@ -94,3 +94,8 @@
 .el-dropdown .el-dropdown-link{
   color: var(--el-color-primary) !important;
 }
+
+// 修复 el-image 图片预览无法关闭的问题（z-index 层级冲突）
+.el-image-viewer__wrapper {
+  z-index: 9999 !important;
+}

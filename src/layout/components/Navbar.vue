@@ -10,7 +10,7 @@
 
     <div class="right-menu">
       <template v-if="appStore.device !== 'mobile'">
-        <el-tooltip content="返回主页" effect="dark" placement="bottom">
+        <el-tooltip v-if="!isMerchant" content="返回主页" effect="dark" placement="bottom">
           <router-link to="/index" class="right-menu-item hover-effect">
             <span class="front-home-btn">🏠</span>
           </router-link>
@@ -92,6 +92,10 @@ const userStore = useUserStore()
 const settingsStore = useSettingsStore()
 
 const visitorMode = computed(() => !userStore.token && sessionStorage.getItem('isVisitor') === 'true')
+
+const isMerchant = computed(() => {
+  return userStore.roles && userStore.roles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
+})
 
 function goLogin() {
   router.push('/login')
