@@ -115,58 +115,6 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/biz',
-    component: Layout,
-    redirect: '/biz/merchant',
-    alwaysShow: true,
-    name: 'Biz',
-    meta: { title: '业务管理', icon: 'system', roles: ['merchant', 'ROLE_MERCHANT'] },
-    children: [
-      {
-        path: 'merchant',
-        component: () => import('@/views/biz/merchant/index'),
-        name: 'BizMerchant',
-        meta: { title: '商户中心', icon: 'home' }
-      },
-      {
-        path: 'hotel',
-        component: () => import('@/views/biz/hotel/index'),
-        name: 'BizHotel',
-        meta: { title: '酒店管理', icon: 'building' }
-      },
-      {
-        path: 'room',
-        component: () => import('@/views/biz/room/index'),
-        name: 'BizRoom',
-        meta: { title: '房型管理', icon: 'component' }
-      },
-      {
-        path: 'comment',
-        component: () => import('@/views/biz/merchantComments'),
-        name: 'BizComment',
-        meta: { title: '评价管理', icon: 'star' }
-      },
-      {
-        path: 'statistics',
-        component: () => import('@/views/biz/statistics/index'),
-        name: 'BizStatistics',
-        meta: { title: '数据统计', icon: 'chart' }
-      },
-      {
-        path: 'notice',
-        component: () => import('@/views/biz/notice/index'),
-        name: 'BizNotice',
-        meta: { title: '通知中心', icon: 'message' }
-      },
-      {
-        path: 'statistics/report',
-        component: () => import('@/views/biz/statistics/report'),
-        name: 'BizStatisticsReport',
-        meta: { title: '营收报表', icon: 'documentation' }
-      }
-    ]
-  },
-  {
     path: '/system/merchant',
     component: Layout,
     hidden: true,
