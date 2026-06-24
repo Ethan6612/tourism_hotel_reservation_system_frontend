@@ -85,7 +85,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="所属酒店" prop="hotelId">
-              <el-select v-model="form.hotelId" placeholder="请选择酒店" @change="onHotelChange">
+              <el-select v-model="form.hotelId" placeholder="请选择酒店">
                 <el-option v-for="h in hotelOptions" :key="h.id" :label="h.name" :value="h.id" />
               </el-select>
             </el-form-item>
@@ -177,6 +177,8 @@
 
 <script setup name="AdminRoomManage">
 import { ref, getCurrentInstance } from 'vue'
+import { listRoom, addRoom, updateRoom, delRoom, updateRoomStatus, updateRoomPrice, updateRoomStock, getLowStockRooms } from '@/api/biz/adminRoom'
+import { listHotel } from '@/api/biz/adminHotel'
 
 const { proxy } = getCurrentInstance()
 
@@ -190,16 +192,7 @@ const stockOpen = ref(false)
 const title = ref('')
 const currentRoom = ref({})
 
-const hotelOptions = ref([
-  { id: 1, name: '北京国际大酒店' },
-  { id: 2, name: '上海外滩精品酒店' },
-  { id: 3, name: '广州白云温泉度假村' },
-  { id: 5, name: '杭州西湖畔民宿' },
-  { id: 8, name: '三亚海景度假酒店' },
-  { id: 9, name: '厦门鼓浪屿别墅酒店' },
-  { id: 11, name: '苏州园林精品客栈' },
-  { id: 12, name: '哈尔滨冰雪主题酒店' }
-])
+const hotelOptions = ref([])
 
 const queryParams = ref({
   pageNum: 1,
@@ -212,7 +205,6 @@ const queryParams = ref({
 const form = ref({
   id: undefined,
   hotelId: undefined,
-  hotelName: '',
   roomType: '',
   area: '',
   bedType: '',
@@ -231,48 +223,24 @@ const rules = {
   stock: [{ required: true, message: '库存不能为空', trigger: 'blur' }]
 }
 
-// ========== Mock 数据 ==========
-const mockRooms = [
-  { id: 101, hotelId: 1, hotelName: '北京国际大酒店', roomType: '豪华大床房', area: '45m²', bedType: '大床', price: 888, stock: 20, status: '0', imgUrl: 'https://picsum.photos/seed/room1/400/300', createTime: '2026-01-15 10:30:00' },
-  { id: 102, hotelId: 1, hotelName: '北京国际大酒店', roomType: '标准双床房', area: '35m²', bedType: '双床', price: 588, stock: 35, status: '0', imgUrl: 'https://picsum.photos/seed/room2/400/300', createTime: '2026-01-15 10:30:00' },
-  { id: 103, hotelId: 1, hotelName: '北京国际大酒店', roomType: '总统套房', area: '120m²', bedType: '大床', price: 2888, stock: 3, status: '0', imgUrl: 'https://picsum.photos/seed/room3/400/300', createTime: '2026-01-15 10:30:00' },
-  { id: 201, hotelId: 2, hotelName: '上海外滩精品酒店', roomType: '外滩景观房', area: '40m²', bedType: '大床', price: 1280, stock: 15, status: '0', imgUrl: 'https://picsum.photos/seed/room4/400/300', createTime: '2026-02-20 14:00:00' },
-  { id: 202, hotelId: 2, hotelName: '上海外滩精品酒店', roomType: '城景标准房', area: '30m²', bedType: '双床', price: 680, stock: 25, status: '0', imgUrl: 'https://picsum.photos/seed/room5/400/300', createTime: '2026-02-20 14:00:00' },
-  { id: 301, hotelId: 3, hotelName: '广州白云温泉度假村', roomType: '温泉亲子房', area: '55m²', bedType: '大床', price: 1580, stock: 8, status: '0', imgUrl: 'https://picsum.photos/seed/room6/400/300', createTime: '2026-03-05 09:15:00' },
-  { id: 302, hotelId: 3, hotelName: '广州白云温泉度假村', roomType: '山景标准房', area: '38m²', bedType: '双床', price: 780, stock: 2, status: '0', imgUrl: 'https://picsum.photos/seed/room7/400/300', createTime: '2026-03-05 09:15:00' },
-  { id: 501, hotelId: 5, hotelName: '杭州西湖畔民宿', roomType: '湖景大床房', area: '32m²', bedType: '大床', price: 960, stock: 6, status: '0', imgUrl: 'https://picsum.photos/seed/room8/400/300', createTime: '2026-04-02 11:20:00' },
-  { id: 502, hotelId: 5, hotelName: '杭州西湖畔民宿', roomType: '庭院双床房', area: '28m²', bedType: '双床', price: 680, stock: 4, status: '1', imgUrl: 'https://picsum.photos/seed/room9/400/300', createTime: '2026-04-02 11:20:00' },
-  { id: 801, hotelId: 8, hotelName: '三亚海景度假酒店', roomType: '海景豪华套房', area: '80m²', bedType: '大床', price: 2680, stock: 12, status: '0', imgUrl: 'https://picsum.photos/seed/room10/400/300', createTime: '2026-05-01 10:00:00' },
-  { id: 802, hotelId: 8, hotelName: '三亚海景度假酒店', roomType: '园景标准房', area: '35m²', bedType: '双床', price: 880, stock: 30, status: '0', imgUrl: 'https://picsum.photos/seed/room11/400/300', createTime: '2026-05-01 10:00:00' },
-  { id: 803, hotelId: 8, hotelName: '三亚海景度假酒店', roomType: '总统别墅', area: '200m²', bedType: '大床', price: 8888, stock: 1, status: '0', imgUrl: 'https://picsum.photos/seed/room12/400/300', createTime: '2026-05-01 10:00:00' },
-  { id: 901, hotelId: 9, hotelName: '厦门鼓浪屿别墅酒店', roomType: '海景阳台房', area: '42m²', bedType: '大床', price: 1180, stock: 5, status: '0', imgUrl: 'https://picsum.photos/seed/room13/400/300', createTime: '2026-05-12 15:30:00' },
-  { id: 1101, hotelId: 11, hotelName: '苏州园林精品客栈', roomType: '园林雅居', area: '36m²', bedType: '大床', price: 860, stock: 8, status: '0', imgUrl: 'https://picsum.photos/seed/room14/400/300', createTime: '2026-05-28 14:15:00' },
-  { id: 1201, hotelId: 12, hotelName: '哈尔滨冰雪主题酒店', roomType: '冰雪主题房', area: '30m²', bedType: '双床', price: 520, stock: 15, status: '0', imgUrl: 'https://picsum.photos/seed/room15/400/300', createTime: '2026-06-05 11:45:00' }
-]
-
-function getList() {
-  loading.value = true
-  setTimeout(() => {
-    let data = [...mockRooms]
-    if (queryParams.value.hotelId) {
-      data = data.filter(r => r.hotelId === queryParams.value.hotelId)
-    }
-    if (queryParams.value.roomType) {
-      data = data.filter(r => r.roomType.includes(queryParams.value.roomType))
-    }
-    if (queryParams.value.status !== undefined && queryParams.value.status !== '') {
-      data = data.filter(r => r.status === queryParams.value.status)
-    }
-    total.value = data.length
-    const start = (queryParams.value.pageNum - 1) * queryParams.value.pageSize
-    roomList.value = data.slice(start, start + queryParams.value.pageSize)
-    loading.value = false
-  }, 300)
+/** 加载酒店下拉选项 */
+function loadHotelOptions() {
+  listHotel({ pageNum: 1, pageSize: 100 }).then(res => {
+    const page = res.data || {}
+    hotelOptions.value = (page.rows || []).map(h => ({ id: h.id, name: h.name }))
+  })
 }
 
-function onHotelChange(hotelId) {
-  const hotel = hotelOptions.value.find(h => h.id === hotelId)
-  form.value.hotelName = hotel ? hotel.name : ''
+/** 查询房型列表 */
+function getList() {
+  loading.value = true
+  listRoom(queryParams.value).then(res => {
+    const page = res.data || {}
+    roomList.value = page.rows || []
+    total.value = page.total || 0
+  }).finally(() => {
+    loading.value = false
+  })
 }
 
 function handleQuery() {
@@ -289,7 +257,6 @@ function reset() {
   form.value = {
     id: undefined,
     hotelId: undefined,
-    hotelName: '',
     roomType: '',
     area: '',
     bedType: '',
@@ -322,27 +289,18 @@ function submitForm() {
   proxy.$refs['roomRef'].validate(valid => {
     if (valid) {
       if (form.value.id != undefined) {
-        const idx = mockRooms.findIndex(r => r.id === form.value.id)
-        if (idx !== -1) {
-          const hotel = hotelOptions.value.find(h => h.id === form.value.hotelId)
-          form.value.hotelName = hotel ? hotel.name : ''
-          Object.assign(mockRooms[idx], form.value)
-        }
-        proxy.$modal.msgSuccess('修改成功')
-      } else {
-        const newId = Math.max(...mockRooms.map(r => r.id)) + 1
-        const hotel = hotelOptions.value.find(h => h.id === form.value.hotelId)
-        mockRooms.push({
-          ...form.value,
-          id: newId,
-          hotelName: hotel ? hotel.name : '',
-          status: '0',
-          createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+        updateRoom(form.value).then(() => {
+          proxy.$modal.msgSuccess('修改成功')
+          open.value = false
+          getList()
         })
-        proxy.$modal.msgSuccess('新增成功')
+      } else {
+        addRoom(form.value).then(() => {
+          proxy.$modal.msgSuccess('新增成功')
+          open.value = false
+          getList()
+        })
       }
-      open.value = false
-      getList()
     }
   })
 }
@@ -356,10 +314,11 @@ function handlePrice(row) {
 function submitPrice() {
   proxy.$refs['priceRef'].validate(valid => {
     if (valid) {
-      currentRoom.value.price = priceForm.value.price
-      proxy.$modal.msgSuccess('价格调整成功')
-      priceOpen.value = false
-      getList()
+      updateRoomPrice(currentRoom.value.id, priceForm.value.price).then(() => {
+        proxy.$modal.msgSuccess('价格调整成功')
+        priceOpen.value = false
+        getList()
+      })
     }
   })
 }
@@ -373,10 +332,11 @@ function handleStock(row) {
 function submitStock() {
   proxy.$refs['stockRef'].validate(valid => {
     if (valid) {
-      currentRoom.value.stock = stockForm.value.stock
-      proxy.$modal.msgSuccess('库存调整成功')
-      stockOpen.value = false
-      getList()
+      updateRoomStock(currentRoom.value.id, stockForm.value.stock).then(() => {
+        proxy.$modal.msgSuccess('库存调整成功')
+        stockOpen.value = false
+        getList()
+      })
     }
   })
 }
@@ -384,35 +344,38 @@ function submitStock() {
 function handleStatusChange(row, status) {
   const label = status === '0' ? '上架' : '下架'
   proxy.$modal.confirm(`确认${label}房型"${row.roomType}"？`).then(() => {
-    row.status = status
-    proxy.$modal.msgSuccess(`${label}成功`)
-    getList()
+    updateRoomStatus(row.id, status).then(() => {
+      proxy.$modal.msgSuccess(`${label}成功`)
+      getList()
+    })
   }).catch(() => {})
 }
 
 function handleDelete(row) {
   proxy.$modal.confirm(`确认删除房型"${row.roomType}"？删除后不可恢复。`).then(() => {
-    const idx = mockRooms.findIndex(r => r.id === row.id)
-    if (idx !== -1) mockRooms.splice(idx, 1)
-    proxy.$modal.msgSuccess('删除成功')
-    getList()
+    delRoom(row.id).then(() => {
+      proxy.$modal.msgSuccess('删除成功')
+      getList()
+    })
   }).catch(() => {})
 }
 
 function showLowStock() {
-  const threshold = 5
-  const lowStockRooms = mockRooms.filter(r => r.stock <= threshold && r.status === '0')
-  if (lowStockRooms.length === 0) {
-    proxy.$modal.alert('暂无低库存房型', '库存状态', { type: 'success' })
-  } else {
-    const names = lowStockRooms.map(r => `"${r.hotelName} - ${r.roomType}"（库存: ${r.stock}）`).join('<br/>')
-    proxy.$modal.alert(`以下房型库存不足（≤${threshold}）：<br/>${names}`, '库存预警', {
-      dangerouslyUseHTMLString: true,
-      type: 'warning'
-    })
-  }
+  getLowStockRooms(5).then(res => {
+    const list = res.data || []
+    if (list.length === 0) {
+      proxy.$modal.alert('暂无低库存房型', '库存状态', { type: 'success' })
+    } else {
+      const names = list.map(r => `"${r.hotelName} - ${r.roomType}"（库存: ${r.stock}）`).join('<br/>')
+      proxy.$modal.alert(`以下房型库存不足（≤5）：<br/>${names}`, '库存预警', {
+        dangerouslyUseHTMLString: true,
+        type: 'warning'
+      })
+    }
+  })
 }
 
+loadHotelOptions()
 getList()
 </script>
 

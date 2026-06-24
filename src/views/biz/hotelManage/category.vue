@@ -78,6 +78,7 @@
 
 <script setup name="AdminCategory">
 import { ref, getCurrentInstance } from 'vue'
+import { listCategory, addCategory, updateCategory, delCategory, updateCategoryStatus } from '@/api/biz/category'
 
 const { proxy } = getCurrentInstance()
 
@@ -107,35 +108,16 @@ const rules = {
   sortOrder: [{ required: true, message: '排序不能为空', trigger: 'blur' }]
 }
 
-// ========== Mock 数据 ==========
-const mockCategories = [
-  { categoryId: 1, categoryName: '商务酒店', sortOrder: 1, status: '0', createTime: '2026-01-10 08:00:00' },
-  { categoryId: 2, categoryName: '度假酒店', sortOrder: 2, status: '0', createTime: '2026-01-10 08:00:00' },
-  { categoryId: 3, categoryName: '民宿客栈', sortOrder: 3, status: '0', createTime: '2026-01-10 08:00:00' },
-  { categoryId: 4, categoryName: '精品酒店', sortOrder: 4, status: '0', createTime: '2026-01-15 10:00:00' },
-  { categoryId: 5, categoryName: '主题酒店', sortOrder: 5, status: '0', createTime: '2026-02-01 14:30:00' },
-  { categoryId: 6, categoryName: '温泉酒店', sortOrder: 6, status: '0', createTime: '2026-02-20 09:00:00' },
-  { categoryId: 7, categoryName: '青年旅舍', sortOrder: 7, status: '1', createTime: '2026-03-05 16:00:00' },
-  { categoryId: 8, categoryName: '公寓式酒店', sortOrder: 8, status: '0', createTime: '2026-03-18 11:00:00' },
-  { categoryId: 9, categoryName: '电竞酒店', sortOrder: 9, status: '0', createTime: '2026-04-02 13:30:00' },
-  { categoryId: 10, categoryName: '亲子酒店', sortOrder: 10, status: '0', createTime: '2026-04-15 10:00:00' }
-]
-
+/** 查询分类列表 */
 function getList() {
   loading.value = true
-  setTimeout(() => {
-    let data = [...mockCategories]
-    if (queryParams.value.categoryName) {
-      data = data.filter(c => c.categoryName.includes(queryParams.value.categoryName))
-    }
-    if (queryParams.value.status !== undefined && queryParams.value.status !== '') {
-      data = data.filter(c => c.status === queryParams.value.status)
-    }
-    total.value = data.length
-    const start = (queryParams.value.pageNum - 1) * queryParams.value.pageSize
-    categoryList.value = data.slice(start, start + queryParams.value.pageSize)
+  listCategory(queryParams.value).then(res => {
+    const page = res.data || {}
+    categoryList.value = page.rows || []
+    total.value = page.total || 0
+  }).finally(() => {
     loading.value = false
-  }, 300)
+  })
 }
 
 function handleQuery() {
@@ -180,22 +162,18 @@ function submitForm() {
   proxy.$refs['categoryRef'].validate(valid => {
     if (valid) {
       if (form.value.categoryId != undefined) {
-        const idx = mockCategories.findIndex(c => c.categoryId === form.value.categoryId)
-        if (idx !== -1) {
-          Object.assign(mockCategories[idx], form.value)
-        }
-        proxy.$modal.msgSuccess('修改成功')
-      } else {
-        const newId = Math.max(...mockCategories.map(c => c.categoryId)) + 1
-        mockCategories.push({
-          ...form.value,
-          categoryId: newId,
-          createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+        updateCategory(form.value).then(() => {
+          proxy.$modal.msgSuccess('修改成功')
+          open.value = false
+          getList()
         })
-        proxy.$modal.msgSuccess('新增成功')
+      } else {
+        addCategory(form.value).then(() => {
+          proxy.$modal.msgSuccess('新增成功')
+          open.value = false
+          getList()
+        })
       }
-      open.value = false
-      getList()
     }
   })
 }
@@ -203,18 +181,19 @@ function submitForm() {
 function handleStatusChange(row, status) {
   const label = status === '0' ? '启用' : '停用'
   proxy.$modal.confirm(`确认${label}分类"${row.categoryName}"？`).then(() => {
-    row.status = status
-    proxy.$modal.msgSuccess(`${label}成功`)
-    getList()
+    updateCategoryStatus(row.categoryId, status).then(() => {
+      proxy.$modal.msgSuccess(`${label}成功`)
+      getList()
+    })
   }).catch(() => {})
 }
 
 function handleDelete(row) {
   proxy.$modal.confirm(`确认删除分类"${row.categoryName}"？删除后不可恢复。`).then(() => {
-    const idx = mockCategories.findIndex(c => c.categoryId === row.categoryId)
-    if (idx !== -1) mockCategories.splice(idx, 1)
-    proxy.$modal.msgSuccess('删除成功')
-    getList()
+    delCategory(row.categoryId).then(() => {
+      proxy.$modal.msgSuccess('删除成功')
+      getList()
+    })
   }).catch(() => {})
 }
 

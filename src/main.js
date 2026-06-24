@@ -86,4 +86,10 @@ app.use(ElementPlus, {
   size: Cookies.get('size') || 'default'
 })
 
+// 全局未捕获 Promise 异常处理，防止控制台红色报错
+window.addEventListener('unhandledrejection', (event) => {
+  console.warn('[全局拦截] 未处理的 Promise 异常:', event.reason)
+  event.preventDefault()
+})
+
 app.mount('#app')
