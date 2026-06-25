@@ -346,10 +346,12 @@
 <script setup name="HotelDetail">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
+import { getHotelDetail, getHotelRooms } from '@/api/front/hotel'
+import request from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -564,8 +566,8 @@ function nextImage() {
   }
 }
 
-// 预订
-function handleBook() {
+// 预订（使用右侧预订卡片，默认第一个房型）
+async function handleBook() {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录')
     router.push('/login')
@@ -575,17 +577,89 @@ function handleBook() {
     ElMessage.warning('请选择入住和退房日期')
     return
   }
-  ElMessage.success('预订成功！')
+  if (rooms.value.length === 0) {
+    ElMessage.warning('暂无可用房型')
+    return
+  }
+  // 默认选第一个房型
+  await createOrderRequest(rooms.value[0].id, booking.value.checkIn, booking.value.checkOut)
 }
 
-// 预订房型
-function handleBookRoom(room) {
+// 预订指定房型
+async function handleBookRoom(room) {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录')
     router.push('/login')
     return
   }
-  ElMessage.success(`已选择房型：${room.name}`)
+  // 使用当前选择的日期，如果没有则默认明天起
+  const checkIn = booking.value.checkIn || new Date(Date.now() + 86400000).toISOString().split('T')[0]
+  const checkOut = booking.value.checkOut || new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0]
+  await createOrderRequest(room.id, checkIn, checkOut)
+}
+
+// 调用创建订单API
+async function createOrderRequest(roomId, checkIn, checkOut) {
+  try {
+    const res = await request({
+      url: '/api/user/order/create',
+      method: 'post',
+      data: {
+        hotelId: Number(route.params.id),
+        roomId: roomId,
+        startDate: checkIn,
+        endDate: checkOut,
+        guests: Number(booking.value.guests || 2)
+      }
+    })
+    const order = res.data || res
+    const orderNo = order.orderNo || ''
+    await ElMessageBox.confirm(
+      `订单创建成功！<br/>订单号：<strong>${orderNo}</strong><br/>金额：<strong>¥${order.totalPrice}</strong><br/><br/>是否立即支付？`,
+      '预订成功',
+      { confirmButtonText: '去支付', cancelButtonText: '稍后支付', type: 'success',
+        dangerouslyUseHTMLString: true }
+    )
+    // 跳转到支付页面
+    router.push('/user/profile/orders')
+  } catch (e) {
+    if (e !== 'cancel' && e?.response?.data?.msg) {
+      ElMessage.error(e.response.data.msg)
+    }
+  }
+}
+
+// 加载真实酒店数据
+async function loadHotelData() {
+  try {
+    const res = await getHotelDetail(route.params.id)
+    const data = res.data || res
+    if (data) {
+      hotel.value = { ...hotel.value, ...data }
+    }
+  } catch { /* 使用默认数据 */ }
+}
+
+// 加载真实房型数据
+async function loadRooms() {
+  try {
+    const res = await getHotelRooms(route.params.id)
+    const data = res.data || res
+    const list = data?.rows || data
+    if (Array.isArray(list) && list.length > 0) {
+      rooms.value = list.map(r => ({
+        id: r.id,
+        name: r.roomType || r.name,
+        type: r.bedType || r.type || '房型',
+        image: r.imgUrl || 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=250&fit=crop',
+        features: ['免费WiFi', '空调', '电视'],
+        bedType: r.bedType || '大床',
+        area: parseInt(r.area) || 40,
+        maxGuests: 2,
+        price: r.price
+      }))
+    }
+  } catch { /* 使用默认房型 */ }
 }
 
 // 跳转到首页
@@ -627,6 +701,10 @@ onMounted(() => {
 
   booking.value.checkIn = tomorrow.toISOString().split('T')[0]
   booking.value.checkOut = dayAfterTomorrow.toISOString().split('T')[0]
+
+  // 加载真实酒店和房型数据
+  loadHotelData()
+  loadRooms()
 })
 </script>
 

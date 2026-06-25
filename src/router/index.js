@@ -225,7 +225,7 @@ export const constantRoutes = [
         meta: {
           title: '订单管理',
           icon: 'list',
-          roles: ['admin', 'ROLE_ADMIN']
+          roles: ['admin', 'ROLE_ADMIN', 'merchant', 'ROLE_MERCHANT']
         }
       },
       {
