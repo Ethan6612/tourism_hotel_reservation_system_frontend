@@ -35,6 +35,24 @@ export function deleteOrder(orderId) {
   })
 }
 
+// ==================== 支付接口 ====================
+
+// 发起微信支付
+export function initiatePay(orderId) {
+  return request({
+    url: '/api/user/order/' + orderId + '/pay',
+    method: 'post'
+  })
+}
+
+// 确认支付
+export function confirmPay(orderId) {
+  return request({
+    url: '/api/user/order/' + orderId + '/pay-confirm',
+    method: 'post'
+  })
+}
+
 // ==================== 用户首页统计 ====================
 
 // 获取用户首页统计数据

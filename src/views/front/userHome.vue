@@ -253,6 +253,11 @@
               >去评价</button>
               <button
                 v-if="order.status === '0'"
+                class="order-btn primary"
+                @click="handlePayOrder(order)"
+              >去支付</button>
+              <button
+                v-if="order.status === '0'"
                 class="order-btn cancel"
                 @click="handleCancelOrder(order.id)"
               >取消</button>
@@ -455,7 +460,8 @@ import HotelCard from '@/components/HotelCard.vue'
 import { getHotCities, getRecommendHotels } from '@/api/front/hotel'
 import {
   listMyOrders, cancelOrder,
-  getUserDashboardStats, getPersonalRecommend
+  getUserDashboardStats, getPersonalRecommend,
+  initiatePay, confirmPay
 } from '@/api/front/userHome'
 import { listMyComments } from '@/api/biz/comment'
 import useUserStore from '@/store/modules/user'
@@ -642,6 +648,22 @@ async function handleCancelOrder(orderId) {
     loadRecentOrders()
     loadStats()
   } catch { /* 用户取消 */ }
+}
+
+async function handlePayOrder(order) {
+  try {
+    await initiatePay(order.id)
+    await ElMessageBox.confirm(
+      `订单号：${order.orderNo}<br/>金额：¥${order.totalPrice}<br/><br/>确认支付？`,
+      '微信支付',
+      { confirmButtonText: '确认支付', cancelButtonText: '取消', type: 'info',
+        dangerouslyUseHTMLString: true }
+    )
+    await confirmPay(order.id)
+    ElMessage.success('支付成功！')
+    loadRecentOrders()
+    loadStats()
+  } catch { /* 用户取消或失败 */ }
 }
 
 // ==================== 数据加载 ====================

@@ -154,14 +154,19 @@
                   </span>
                   <button
                     v-if="order.status === '0'"
+                    class="order-btn pay-btn"
+                    @click="handlePay(order)"
+                  >去支付</button>
+                  <button
+                    v-if="order.status === '0'"
                     class="order-btn cancel-btn"
                     @click="handleCancel(order)"
                   >取消订单</button>
                   <button
                     v-if="order.status === '1'"
-                    class="order-btn pay-btn"
-                    @click="handlePay(order)"
-                  >去支付</button>
+                    class="order-btn detail-btn"
+                    @click="handleDetail(order)"
+                  >查看详情</button>
                   <button
                     v-if="order.status === '2' || order.status === '5' || order.status === '6'"
                     class="order-btn delete-btn"
@@ -169,9 +174,20 @@
                   >删除</button>
                   <button
                     v-if="order.status === '3'"
+                    class="order-btn pay-btn"
+                    style="background:#f0fdf4;color:#22c55e"
+                    @click="handleDetail(order)"
+                  >已完成</button>
+                  <button
+                    v-if="order.status === '3'"
                     class="order-btn review-btn"
                     @click="goToWriteReview(order)"
                   >去评价</button>
+                  <button
+                    v-if="order.status === '4'"
+                    class="order-btn detail-btn"
+                    @click="handleDetail(order)"
+                  >查看详情</button>
                   <button
                     class="order-btn detail-btn"
                     @click="handleDetail(order)"
@@ -207,6 +223,33 @@
       </div>
     </div>
 
+    <!-- 微信支付对话框 -->
+    <el-dialog title="微信支付" v-model="payDialogOpen" width="420px" destroy-on-close center>
+      <div class="pay-dialog-body">
+        <div class="pay-order-info">
+          <span class="pay-label">订单号</span>
+          <span class="pay-value">{{ payingOrder.orderNo }}</span>
+        </div>
+        <div class="pay-order-info">
+          <span class="pay-label">支付金额</span>
+          <span class="pay-amount">¥{{ payingOrder.totalPrice }}</span>
+        </div>
+        <div class="pay-qrcode">
+          <img :src="payQrCode" alt="微信支付二维码" />
+          <p>请使用微信扫一扫支付</p>
+        </div>
+        <div class="pay-tips">
+          <span>💡 演示环境，点击下方按钮模拟支付</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="payDialogOpen = false">取消支付</el-button>
+        <el-button type="success" @click="confirmPayment" :loading="paying">
+          确认支付 ¥{{ payingOrder.totalPrice }}
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 订单详情对话框 -->
     <el-dialog :title="'订单详情 - ' + currentOrder.orderNo" v-model="detailOpen" width="650px" destroy-on-close>
       <el-descriptions :column="2" border>
@@ -239,7 +282,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
-import { listMyOrders, getOrderDetail, cancelOrder, deleteOrder, getUserDashboardStats } from '@/api/front/userHome'
+import { listMyOrders, getOrderDetail, cancelOrder, deleteOrder, getUserDashboardStats, initiatePay, confirmPay } from '@/api/front/userHome'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -258,6 +301,10 @@ const activeTab = ref('all')
 const detailOpen = ref(false)
 const currentOrder = ref({})
 const userPoints = ref(0)
+const payDialogOpen = ref(false)
+const payingOrder = ref({})
+const payQrCode = ref('')
+const paying = ref(false)
 
 const stats = reactive({
   total: 0,
@@ -462,8 +509,39 @@ function handleDelete(order) {
 }
 
 // 去支付
-function handlePay(order) {
-  router.push({ path: '/user/payment', query: { orderId: order.id, orderNo: order.orderNo, amount: order.totalPrice } })
+async function handlePay(order) {
+  try {
+    const res = await initiatePay(order.id)
+    const data = res.data || res
+    // 检查是否有错误信息
+    if (data && data.code && data.code !== 200) {
+      ElMessage.error(data.msg || '发起支付失败')
+      return
+    }
+    payingOrder.value = order
+    payQrCode.value = data.qrCodeUrl || 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=WECHAT_PAY_' + order.orderNo
+    payDialogOpen.value = true
+  } catch (e) {
+    // 尝试解析错误信息
+    const msg = e?.response?.data?.msg || e?.message || '发起支付失败，请重试'
+    ElMessage.error(msg)
+  }
+}
+
+// 确认支付
+async function confirmPayment() {
+  paying.value = true
+  try {
+    await confirmPay(payingOrder.value.id)
+    ElMessage.success('支付成功！')
+    payDialogOpen.value = false
+    loadOrders()
+    loadStats()
+  } catch {
+    ElMessage.error('支付失败，请重试')
+  } finally {
+    paying.value = false
+  }
 }
 
 onMounted(() => {
@@ -755,5 +833,42 @@ onMounted(() => {
   .order-card-footer { flex-direction: column; align-items: flex-start; }
   .order-actions { width: 100%; justify-content: flex-end; }
   .points-card { width: 100%; justify-content: center; }
+}
+
+/* ==================== 支付对话框 ==================== */
+.pay-dialog-body {
+  text-align: center;
+  padding: 10px 0;
+}
+.pay-order-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.pay-label { font-size: 14px; color: #999; }
+.pay-value { font-size: 14px; color: #333; font-weight: 500; }
+.pay-amount { font-size: 22px; font-weight: 700; color: #ff6b6b; }
+.pay-qrcode {
+  margin: 20px 0;
+}
+.pay-qrcode img {
+  width: 200px;
+  height: 200px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+.pay-qrcode p {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
+}
+.pay-tips {
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: #fef3c7;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #92400e;
 }
 </style>
