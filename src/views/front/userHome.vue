@@ -545,8 +545,7 @@ function goHome() { window.scrollTo({ top: 0, behavior: 'smooth' }) }
 function logout() {
   userStore.logOut().then(() => {
     ElMessage.success('退出登录成功')
-    router.push('/index')
-    location.reload()
+    window.location.href = '/index'
   })
 }
 
