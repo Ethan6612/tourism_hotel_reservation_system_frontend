@@ -86,17 +86,20 @@ service.interceptors.response.use(res => {
       return res.data
     }
     if (code === 401) {
-      if (!isRelogin.show) {
-        isRelogin.show = true
-        ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
+      // 只有已登录用户(token存在)才提示"登录状态已过期"，未登录用户直接忽略
+      if (getToken()) {
+        if (!isRelogin.show) {
+          isRelogin.show = true
+          ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
+            isRelogin.show = false
+            useUserStore().logOut().then(() => {
+              location.href = '/index'
+            })
+        }).catch(() => {
           isRelogin.show = false
-          useUserStore().logOut().then(() => {
-            location.href = '/index'
-          })
-      }).catch(() => {
-        isRelogin.show = false
-      })
-    }
+        })
+      }
+      }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
     } else if (code === 500) {
       ElMessage({ message: msg, type: 'error' })
