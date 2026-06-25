@@ -294,6 +294,15 @@
               </div>
             </div>
             <p class="review-content">{{ review.content }}</p>
+            <div class="review-likes">
+              <span class="like-count" :class="{ liked: review._liked }" @click="handleReviewLike(review)">
+                <svg class="like-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m7-2V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14Z"/></svg>
+                <span>{{ review.likeCount || 0 }}</span>
+              </span>
+              <span class="likes-who" v-if="Number(userStore.id) === Number(review.userId) && (review.likeCount || 0) > 0" @click="showReviewLikes(review)">
+                谁赞过
+              </span>
+            </div>
             <div v-if="review.reply" class="review-reply">
               <span class="reply-label">商家回复：</span>
               <span class="reply-content">{{ review.reply }}</span>
@@ -302,6 +311,18 @@
         </div>
       </div>
     </section>
+
+    <!-- 点赞列表对话框 -->
+    <el-dialog title="👍 点赞详情" v-model="likesOpen" width="420px" append-to-body>
+      <div v-if="likesList.length > 0" class="likes-list">
+        <div v-for="u in likesList" :key="u.id" class="likes-user">
+          <span class="likes-avatar">{{ (u.userName || '用户').charAt(0) }}</span>
+          <span class="likes-name">{{ u.userName || '用户' }}</span>
+          <span class="likes-time">{{ u.createTime }}</span>
+        </div>
+      </div>
+      <el-empty v-else description="暂无点赞" :image-size="80" />
+    </el-dialog>
 
     <!-- 页脚 -->
     <footer class="footer">
@@ -348,6 +369,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
+import { likeComment, getCommentLikes } from '@/api/biz/comment'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 import { getHotelDetail, getHotelRooms } from '@/api/front/hotel'
@@ -359,6 +381,32 @@ const userStore = useUserStore()
 
 // 图片轮播
 const currentImageIndex = ref(0)
+
+// 点赞
+const likesOpen = ref(false)
+const likesList = ref([])
+const currentUserId = computed(() => userStore.id)
+
+async function handleReviewLike(review) {
+  try {
+    const res = await likeComment(review.id)
+    if (res.msg && res.msg.includes('取消')) {
+      review._liked = false
+      review.likeCount = Math.max(0, (review.likeCount || 0) - 1)
+    } else {
+      review._liked = true
+      review.likeCount = (review.likeCount || 0) + 1
+    }
+  } catch { /* 错误已处理 */ }
+}
+
+async function showReviewLikes(review) {
+  try {
+    const res = await getCommentLikes(review.id)
+    likesList.value = res.data || []
+    likesOpen.value = true
+  } catch { likesList.value = [] }
+}
 
 // 预订信息
 const booking = ref({
@@ -498,23 +546,25 @@ const ratingDistribution = ref([
 // 评价数据
 const reviews = ref([
   {
-    id: 1,
+    id: 1, userId: 2,
     userName: '张先生',
     score: 4.9,
     time: '2026-06-10',
     content: '酒店位置非常好，就在王府井旁边，逛街购物很方便。房间干净整洁，设施齐全，床很舒服。早餐品种丰富，服务态度也很好。下次来北京还会选择这家酒店！',
-    reply: null
+    reply: null,
+    likeCount: 5, _liked: false
   },
   {
-    id: 2,
+    id: 2, userId: 3,
     userName: '李女士',
     score: 4.8,
     time: '2026-06-08',
     content: '带着家人来北京旅游，选择了这家酒店。酒店环境很好，房间很大，孩子很喜欢。前台服务很热情，还帮忙介绍了周边的景点和美食。唯一不足的是停车位有点紧张。',
-    reply: '尊敬的客人，感谢您的入住和好评！停车位紧张的问题我们已经反馈给相关部门，会尽快改善。期待您再次光临！'
+    reply: '尊敬的客人，感谢您的入住和好评！停车位紧张的问题我们已经反馈给相关部门，会尽快改善。期待您再次光临！',
+    likeCount: 3, _liked: false
   },
   {
-    id: 3,
+    id: 3, userId: 4,
     userName: '王经理',
     score: 4.7,
     time: '2026-06-05',
@@ -1484,6 +1534,89 @@ onMounted(() => {
 }
 
 /* 用户评价 */
+.review-likes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.like-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #999;
+  transition: color 0.2s;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: #fafafa;
+  user-select: none;
+}
+
+.like-count:hover {
+  color: #e74c3c;
+  background: #fef2f2;
+}
+
+.like-count.liked {
+  color: #e74c3c;
+  background: #fef2f2;
+  font-weight: 600;
+}
+
+.likes-who {
+  font-size: 12px;
+  color: #409eff;
+  cursor: pointer;
+}
+
+.likes-who:hover {
+  text-decoration: underline;
+}
+
+.likes-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.likes-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.likes-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.likes-name {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.likes-time {
+  font-size: 12px;
+  color: #bbb;
+}
+
+.like-svg {
+  flex-shrink: 0;
+}
+
 .review-section {
   padding: 30px 0;
   background: #fff;

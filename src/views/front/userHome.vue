@@ -247,10 +247,15 @@
                 @click="goToOrderDetail(order.id)"
               >查看详情</button>
               <button
-                v-if="order.status === '3'"
+                v-if="order.status === '3' && !order.reviewed"
                 class="order-btn review"
-                @click="goToWriteReview(order.id)"
+                @click="goToWriteReview(order)"
               >去评价</button>
+              <button
+                v-else-if="order.status === '3' && order.reviewed"
+                class="order-btn reviewed"
+                disabled
+              >已评价</button>
               <button
                 v-if="order.status === '0'"
                 class="order-btn primary"
@@ -631,7 +636,18 @@ function calcOrderPoints(totalPrice) {
 function goToOrders() { router.push('/user/profile/orders') }
 function goToPoints() { router.push('/user/profile/points') }
 function goToOrderDetail(id) { router.push('/user/order/' + id) }
-function goToWriteReview(id) { router.push({ path: '/user/comment/write', query: { orderId: id } }) }
+function goToWriteReview(order) {
+  router.push({ path: '/user/comment/write', query: {
+    orderId: order.id,
+    hotelId: order.hotelId || undefined,
+    hotelName: order.hotelName || undefined,
+    hotelImage: order.hotelImage || undefined,
+    roomType: order.roomType || undefined,
+    roomId: order.roomId || undefined,
+    checkInDate: order.checkInDate || undefined,
+    checkOutDate: order.checkOutDate || undefined
+  }})
+}
 function goToReviews() { router.push('/user/myComments') }
 function goToFavorites() { router.push('/user/profile/favorites') }
 function goToNotifications() { router.push('/user/notifications') }
@@ -1426,6 +1442,12 @@ onUnmounted(() => {
 .order-btn.cancel:hover {
   background: #ef4444;
   color: #fff;
+}
+
+.order-btn.reviewed {
+  background: #e8f5e9;
+  color: #4caf50;
+  cursor: default;
 }
 
 /* ==================== 评价列表 ==================== */

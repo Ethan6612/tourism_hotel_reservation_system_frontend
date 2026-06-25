@@ -121,6 +121,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { submitComment, getComment, updateMyComment, appendComment } from '@/api/biz/comment'
+import { getOrderDetail } from '@/api/front/userHome'
 
 const router = useRouter()
 const route = useRoute()
@@ -146,6 +147,7 @@ const submitting = ref(false)
 const fileInput = ref(null)
 
 const orderInfo = ref({
+  hotelId: undefined,
   hotelName: '',
   hotelImage: '',
   roomType: '',
@@ -171,13 +173,27 @@ function triggerUpload() {
   fileInput.value?.click()
 }
 
-function handleFileChange(e) {
+async function handleFileChange(e) {
   const files = e.target.files
   for (const file of files) {
     if (form.value.images.length >= 6) break
-    // 实际项目中应上传到服务器获取 URL，这里用本地预览模拟
-    const url = URL.createObjectURL(file)
-    form.value.images.push(url)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const base = import.meta.env.VITE_APP_BASE_API || ''
+      const res = await fetch(base + '/api/upload/image', { method: 'POST', body: formData })
+      if (!res.ok) throw new Error('上传失败')
+      const json = await res.json()
+      if (json.code === 200) {
+        form.value.images.push(json.data || json.msg)
+      } else {
+        throw new Error(json.msg || '上传失败')
+      }
+    } catch {
+      // 上传失败时使用本地预览
+      const url = URL.createObjectURL(file)
+      form.value.images.push(url)
+    }
   }
   e.target.value = ''
 }
@@ -201,16 +217,19 @@ async function handleSubmit() {
     if (mode.value === 'write') {
       const data = {
         orderId: route.query.orderId,
+        hotelId: route.query.hotelId || orderInfo.value.hotelId,
+        roomId: route.query.roomId || undefined,
         score: form.value.score,
         content: form.value.content,
         images: JSON.stringify(form.value.images),
         isAnonymous: form.value.isAnonymous ? '1' : '0'
       }
       await submitComment(data)
-      ElMessage.success('评价发布成功！审核通过后将公开展示')
+      ElMessage.success('评价发布成功！')
     } else if (mode.value === 'edit') {
       const data = {
         id: commentId.value,
+        hotelId: route.query.hotelId || orderInfo.value.hotelId,
         score: form.value.score,
         content: form.value.content,
         images: JSON.stringify(form.value.images),
@@ -232,14 +251,23 @@ async function handleSubmit() {
 
 onMounted(async () => {
   // 从 query 获取订单信息（写评价模式）
-  if (route.query.hotelName) {
-    orderInfo.value = {
-      hotelName: route.query.hotelName || '',
-      hotelImage: route.query.hotelImage || '',
-      roomType: route.query.roomType || '',
-      checkInDate: route.query.checkInDate || '',
-      checkOutDate: route.query.checkOutDate || ''
-    }
+  orderInfo.value = {
+    hotelId: route.query.hotelId || undefined,
+    hotelName: route.query.hotelName || '',
+    hotelImage: route.query.hotelImage || '',
+    roomType: route.query.roomType || '',
+    checkInDate: route.query.checkInDate || '',
+    checkOutDate: route.query.checkOutDate || ''
+  }
+  // 如果 hotelId 缺失，从订单详情获取
+  if (!orderInfo.value.hotelId && route.query.orderId) {
+    try {
+      const res = await getOrderDetail(route.query.orderId)
+      const data = res.data || res
+      orderInfo.value.hotelId = data.hotelId || data.hotel_id
+      orderInfo.value.hotelName = data.hotelName || data.hotel_name || orderInfo.value.hotelName
+      orderInfo.value.roomType = data.roomType || data.room_type || orderInfo.value.roomType
+    } catch { /* 忽略 */ }
   }
   // 编辑/追加模式：加载已有评价
   if (mode.value === 'edit' || mode.value === 'append') {

@@ -246,7 +246,7 @@ async function loadData() {
     ])
     if (commentRes.status === 'fulfilled') {
       const data = commentRes.value
-      allComments.value = (data.rows || data.data?.rows || []).map(c => ({ ...c, expanded: false }))
+      allComments.value = (data.rows || data.data?.rows || []).map(c => ({ ...c, expanded: false, _liked: c.liked || false }))
     }
     if (statsRes.status === 'fulfilled') {
       const s = statsRes.value
