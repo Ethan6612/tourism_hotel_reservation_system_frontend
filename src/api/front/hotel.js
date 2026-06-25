@@ -41,6 +41,14 @@ export function getRecommendHotels() {
   })
 }
 
+// 查询热销排行
+export function getHotSalesRank() {
+  return request({
+    url: '/api/hotel/hotSales',
+    method: 'get'
+  })
+}
+
 // 创建订单
 export function createOrder(data) {
   return request({

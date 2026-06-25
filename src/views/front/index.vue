@@ -28,9 +28,12 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item command="orders">我的订单</el-dropdown-item>
+                  <el-dropdown-item command="points">我的积分</el-dropdown-item>
+                  <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
                   <el-dropdown-item command="merchant" v-if="isMerchant">我的商户</el-dropdown-item>
-                  <el-dropdown-item command="console" v-if="isAdmin">前往控制台</el-dropdown-item>
-                  <el-dropdown-item command="logout" :divided="isMerchant || isAdmin">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="console" v-if="isAdmin" divided>前往控制台</el-dropdown-item>
+                  <el-dropdown-item command="logout" :divided="!isAdmin && !isMerchant">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -173,6 +176,35 @@
       </div>
     </section>
 
+    <!-- 热销排行 -->
+    <section class="hot-rank-section">
+      <div class="container">
+        <h2 class="section-title">🔥 热销排行</h2>
+        <p class="section-subtitle">根据真实订单量排名，看看大家都在住哪里</p>
+        <div class="hot-rank-grid">
+          <div
+            v-for="(item, index) in hotSalesRank"
+            :key="item.id"
+            class="hot-rank-card"
+            @click="goToHotelDetail(item.id)"
+          >
+            <div class="hot-rank-num">{{ index + 1 }}</div>
+            <div class="hot-rank-img">
+              <img :src="item.imgUrl || defaultHotelImage" :alt="item.name" />
+            </div>
+            <div class="hot-rank-body">
+              <h4>{{ item.name }}</h4>
+              <div class="hot-rank-stars">{{ '★'.repeat(item.star || 0) }}</div>
+              <div class="hot-rank-bottom">
+                <span class="hot-rank-sales">已售{{ item.salesCount || 0 }}单</span>
+                <span class="hot-rank-price" v-if="item.minPrice">¥{{ item.minPrice }}起</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 页脚 -->
     <footer class="footer">
       <div class="container">
@@ -219,7 +251,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import HotelCard from '@/components/HotelCard.vue'
-import { searchHotels, getHotCities, getRecommendHotels } from '@/api/front/hotel'
+import { searchHotels, getHotCities, getRecommendHotels, getHotSalesRank } from '@/api/front/hotel'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 
@@ -235,6 +267,8 @@ const searchForm = ref({
 
 const hotCities = ref([])
 const hotels = ref([])
+const hotSalesRank = ref([])
+const defaultHotelImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop'
 const activeTab = ref('recommend')
 const userDropdown = ref(null)
 
@@ -264,6 +298,15 @@ const isMerchant = computed(() => {
 
 function handleUserCommand(command) {
   switch (command) {
+    case 'orders':
+      router.push('/user/profile/orders')
+      break
+    case 'points':
+      router.push('/user/profile/points')
+      break
+    case 'reviews':
+      router.push('/user/myComments')
+      break
     case 'merchant':
       // ✅ 商户用户点击"我的商户"，跳转到评价管理页面
       router.push('/biz/comment')
@@ -417,10 +460,24 @@ function goToHotelDetail(hotelId) {
 onMounted(() => {
   // 获取热门城市
   hotCities.value = mockCities
-  
+
   // 获取推荐酒店
   hotels.value = mockHotels
+
+  // 获取热销排行
+  loadHotSalesRank()
 })
+
+async function loadHotSalesRank() {
+  try {
+    const res = await getHotSalesRank()
+    const data = res.data || res
+    if (Array.isArray(data)) hotSalesRank.value = data
+    else if (data && Array.isArray(data.rows)) hotSalesRank.value = data.rows
+  } catch {
+    // API不可用时用mock数据
+  }
+}
 </script>
 
 <style scoped>
@@ -876,5 +933,83 @@ onMounted(() => {
   text-align: center;
   color: #666;
   font-size: 12px;
+}
+
+/* ==================== 热销排行 ==================== */
+.hot-rank-section {
+  background: #fff;
+}
+.hot-rank-section .container {
+  padding-top: 60px;
+  padding-bottom: 60px;
+}
+.hot-rank-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.hot-rank-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  border: 1px solid #f0f0f0;
+  background: #fff;
+}
+.hot-rank-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+.hot-rank-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f0f0f0;
+  color: #999;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hot-rank-card:nth-child(1) .hot-rank-num { background: #fef3c7; color: #d97706; }
+.hot-rank-card:nth-child(2) .hot-rank-num { background: #e5e7eb; color: #6b7280; }
+.hot-rank-card:nth-child(3) .hot-rank-num { background: #fed7aa; color: #c2410c; }
+
+.hot-rank-img {
+  width: 70px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.hot-rank-img img { width: 100%; height: 100%; object-fit: cover; }
+
+.hot-rank-body { flex: 1; min-width: 0; }
+.hot-rank-body h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hot-rank-stars { color: #f59e0b; font-size: 11px; margin-bottom: 4px; }
+.hot-rank-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hot-rank-sales { font-size: 11px; color: #22c55e; }
+.hot-rank-price { font-size: 13px; font-weight: 700; color: #ff6b6b; }
+
+@media (max-width: 768px) {
+  .hot-rank-grid { grid-template-columns: 1fr; }
 }
 </style>

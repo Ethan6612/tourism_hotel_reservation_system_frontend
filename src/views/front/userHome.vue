@@ -29,10 +29,11 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                   <el-dropdown-item command="orders">我的订单</el-dropdown-item>
+                  <el-dropdown-item command="points">我的积分</el-dropdown-item>
                   <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
                   <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
                   <el-dropdown-item command="console" v-if="isAdmin || isMerchant" divided>前往控制台</el-dropdown-item>
-                  <el-dropdown-item command="logout" :divided="isAdmin || isMerchant">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -194,7 +195,7 @@
             </div>
             <span class="stat-arrow">→</span>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" @click="goToPoints">
             <div class="stat-icon-box" style="background: #f0fdf4;">
               <span>🎁</span>
             </div>
@@ -202,6 +203,7 @@
               <span class="stat-number">{{ stats.points || 0 }}</span>
               <span class="stat-label">我的积分</span>
             </div>
+            <span class="stat-arrow">→</span>
           </div>
         </div>
       </div>
@@ -226,9 +228,12 @@
                   {{ getOrderStatusText(order.status) }}
                 </el-tag>
               </div>
-              <p class="order-detail">{{ order.roomType }} · {{ order.guests || 1 }}位客人</p>
+              <p class="order-detail">{{ order.roomType || '房型信息' }}</p>
               <p class="order-dates">
-                📅 {{ order.checkInDate }} → {{ order.checkOutDate }}（{{ order.nights }}晚）
+                📅 {{ formatOrderDate(order.startDate) }} → {{ formatOrderDate(order.endDate) }}（{{ calcOrderNights(order) }}晚）
+              </p>
+              <p v-if="order.status === '3'" class="order-points-info">
+                🎁 已获得 <strong>{{ calcOrderPoints(order.totalPrice) }}</strong> 积分
               </p>
             </div>
             <div class="order-right">
@@ -237,17 +242,22 @@
                 <span class="price-value">{{ order.totalPrice }}</span>
               </div>
               <button
-                v-if="order.status === 'confirmed' || order.status === 'paid'"
+                v-if="order.status === '1'"
                 class="order-btn primary"
                 @click="goToOrderDetail(order.id)"
               >查看详情</button>
               <button
-                v-if="order.status === 'completed' && !order.reviewed"
+                v-if="order.status === '3'"
                 class="order-btn review"
                 @click="goToWriteReview(order.id)"
               >去评价</button>
               <button
-                v-if="order.status === 'pending'"
+                v-if="order.status === '0'"
+                class="order-btn primary"
+                @click="handlePayOrder(order)"
+              >去支付</button>
+              <button
+                v-if="order.status === '0'"
                 class="order-btn cancel"
                 @click="handleCancelOrder(order.id)"
               >取消</button>
@@ -450,7 +460,8 @@ import HotelCard from '@/components/HotelCard.vue'
 import { getHotCities, getRecommendHotels } from '@/api/front/hotel'
 import {
   listMyOrders, cancelOrder,
-  getUserDashboardStats, getPersonalRecommend
+  getUserDashboardStats, getPersonalRecommend,
+  initiatePay, confirmPay
 } from '@/api/front/userHome'
 import { listMyComments } from '@/api/biz/comment'
 import useUserStore from '@/store/modules/user'
@@ -520,6 +531,7 @@ function handleUserCommand(command) {
   switch (command) {
     case 'profile': router.push('/user/profile'); break
     case 'orders': router.push('/user/profile/orders'); break
+    case 'points': router.push('/user/profile/points'); break
     case 'reviews': router.push('/user/myComments'); break
     case 'favorites': router.push('/user/profile/favorites'); break
     case 'console': router.push('/dashboard'); break
@@ -591,14 +603,34 @@ function goToHotelList() { router.push('/hotel/search') }
 
 // 订单 / 评价 / 收藏
 function getOrderStatusType(s) {
-  const m = { pending: 'warning', confirmed: 'success', paid: '', completed: 'info', cancelled: 'danger' }
+  const m = { '0': 'warning', '1': '', '2': 'info', '3': 'success', '4': 'danger', '5': 'info', '6': 'danger' }
   return m[s] || 'info'
 }
 function getOrderStatusText(s) {
-  const m = { pending: '待确认', confirmed: '已确认', paid: '已支付', completed: '已完成', cancelled: '已取消' }
+  const m = { '0': '待支付', '1': '已支付', '2': '已取消', '3': '已完成', '4': '退款中', '5': '已退款', '6': '退款驳回' }
   return m[s] || s
 }
+
+function formatOrderDate(date) {
+  if (!date) return '-'
+  if (typeof date === 'string') return date.substring(0, 10)
+  return new Date(date).toISOString().substring(0, 10)
+}
+
+function calcOrderNights(order) {
+  if (!order.startDate || !order.endDate) return 0
+  const start = new Date(order.startDate)
+  const end = new Date(order.endDate)
+  const diff = end.getTime() - start.getTime()
+  return Math.max(0, Math.round(diff / (1000 * 60 * 60 * 24)))
+}
+
+function calcOrderPoints(totalPrice) {
+  if (!totalPrice) return 0
+  return Math.floor(Number(totalPrice))
+}
 function goToOrders() { router.push('/user/profile/orders') }
+function goToPoints() { router.push('/user/profile/points') }
 function goToOrderDetail(id) { router.push('/user/order/' + id) }
 function goToWriteReview(id) { router.push({ path: '/user/comment/write', query: { orderId: id } }) }
 function goToReviews() { router.push('/user/myComments') }
@@ -618,15 +650,51 @@ async function handleCancelOrder(orderId) {
   } catch { /* 用户取消 */ }
 }
 
+async function handlePayOrder(order) {
+  try {
+    await initiatePay(order.id)
+    await ElMessageBox.confirm(
+      `订单号：${order.orderNo}<br/>金额：¥${order.totalPrice}<br/><br/>确认支付？`,
+      '微信支付',
+      { confirmButtonText: '确认支付', cancelButtonText: '取消', type: 'info',
+        dangerouslyUseHTMLString: true }
+    )
+    await confirmPay(order.id)
+    ElMessage.success('支付成功！')
+    loadRecentOrders()
+    loadStats()
+  } catch { /* 用户取消或失败 */ }
+}
+
 // ==================== 数据加载 ====================
 
 async function loadStats() {
   if (!isLoggedIn.value) return
   try {
     const res = await getUserDashboardStats()
-    if (res.data) stats.value = { ...stats.value, ...res.data }
-  } catch {
-    stats.value = { orderCount: 3, activeOrders: 1, reviewCount: 2, pendingReviews: 1, favoriteCount: 5, points: 1280 }
+    // axios拦截器已解包: res = { code, data, msg }
+    // data在 res.data 中（RuoYi AjaxResult格式）
+    const body = res.data || res
+    if (body) {
+      stats.value = {
+        orderCount: body.orderCount ?? stats.value.orderCount,
+        activeOrders: body.activeOrders ?? stats.value.activeOrders,
+        reviewCount: body.reviewCount ?? stats.value.reviewCount,
+        pendingReviews: body.pendingReviews ?? stats.value.pendingReviews,
+        favoriteCount: body.favoriteCount ?? stats.value.favoriteCount,
+        points: body.points ?? stats.value.points
+      }
+    }
+  } catch (e) {
+    console.warn('获取首页统计失败，使用订单列表推算', e)
+    // 降级：从订单列表推算
+    try {
+      const res = await listMyOrders({ pageNum: 1, pageSize: 100 })
+      const list = res.data?.rows || res.rows || []
+      stats.value.orderCount = list.length
+      stats.value.activeOrders = list.filter(o => o.status === '0' || o.status === '1' || o.status === '4').length
+      stats.value.points = res.data?.points ?? res.points ?? stats.value.points
+    } catch { /* 忽略 */ }
   }
 }
 
@@ -634,13 +702,12 @@ async function loadRecentOrders() {
   if (!isLoggedIn.value) return
   try {
     const res = await listMyOrders({ pageNum: 1, pageSize: 3 })
-    if (res.rows) recentOrders.value = res.rows
-    else if (res.data?.rows) recentOrders.value = res.data.rows
-  } catch {
-    recentOrders.value = [
-      { id: 1001, hotelName: '北京希尔顿酒店管理有限公司', hotelImage: defaultHotelImg, roomType: '豪华大床房', guests: 2, checkInDate: '2026-06-15', checkOutDate: '2026-06-17', nights: 2, totalPrice: 2560, status: 'confirmed', reviewed: false },
-      { id: 1002, hotelName: '杭州西湖国宾馆有限公司', hotelImage: 'https://images.unsplash.com/photo-1551882547-be7b2a60087d?w=200&h=150&fit=crop', roomType: '湖景套房', guests: 2, checkInDate: '2026-05-20', checkOutDate: '2026-05-22', nights: 2, totalPrice: 3360, status: 'completed', reviewed: false }
-    ]
+    // axios拦截器解包后: res = { code, data: { rows, total } }
+    const list = res.data?.rows || res.rows || []
+    recentOrders.value = list
+  } catch (e) {
+    console.warn('获取最近订单失败', e)
+    recentOrders.value = []
   }
 }
 
@@ -1298,6 +1365,17 @@ onUnmounted(() => {
 .order-dates {
   font-size: 13px;
   color: #999;
+}
+
+.order-points-info {
+  font-size: 13px;
+  color: #22c55e;
+  margin-top: 2px;
+}
+
+.order-points-info strong {
+  color: #16a34a;
+  font-weight: 700;
 }
 
 .order-right {

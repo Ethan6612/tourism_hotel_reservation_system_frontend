@@ -169,6 +169,20 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/user/profile/orders',
+    component: () => import('@/views/front/myOrders'),
+    hidden: true,
+    name: 'MyOrders',
+    meta: { title: '我的订单' }
+  },
+  {
+    path: '/user/profile/points',
+    component: () => import('@/views/front/myPoints'),
+    hidden: true,
+    name: 'MyPoints',
+    meta: { title: '我的积分' }
+  },
+  {
     path: '/user/myComments',
     component: () => import('@/views/front/myComments'),
     hidden: true,
@@ -195,6 +209,72 @@ export const constantRoutes = [
     hidden: true,
     name: 'AppendComment',
     meta: { title: '追加评价' }
+  },
+  {
+    path: '/biz',
+    component: Layout,
+    hidden: false,
+    alwaysShow: true,
+    redirect: 'noredirect',
+    meta: { title: '业务管理', icon: 'shopping' },
+    children: [
+      {
+        path: 'order',
+        component: () => import('@/views/biz/order/index'),
+        name: 'Order',
+        meta: {
+          title: '订单管理',
+          icon: 'list',
+          roles: ['admin', 'ROLE_ADMIN']
+        }
+      },
+      {
+        path: 'merchant',
+        component: () => import('@/views/biz/merchant/index'),
+        name: 'Merchant',
+        meta: { 
+          title: '商户管理', 
+          icon: 'peoples',
+          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
+        }
+      },
+      {
+        path: 'merchantAudit',
+        component: () => import('@/views/biz/merchant/audit'),
+        name: 'MerchantAudit',
+        meta: { 
+          title: '商户审核', 
+          icon: 'checkbox',
+          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
+        }
+      },
+      {
+        path: 'comment',
+        component: () => import('@/views/biz/comment/index'),
+        name: 'Comment',
+        meta: {
+          title: '评价管理',
+          icon: 'message',
+          roles: ['admin', 'ROLE_ADMIN'] // 只有管理员可以访问
+        }
+      },
+      {
+        path: 'payment',
+        component: () => import('@/views/biz/payment/index'),
+        name: 'Payment',
+        meta: { title: '支付记录', icon: 'pay' }
+      },
+      {
+        path: 'merchantComments',
+        component: () => import('@/views/biz/merchantComments'),
+        name: 'MerchantComments',
+        meta: {
+          title: '评价管理',
+          icon: 'message',
+          roles: ['merchant', 'ROLE_MERCHANT']
+        }
+      }
+    ]
   }
 ]
 
