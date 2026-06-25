@@ -123,8 +123,16 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
-            <el-form-item label="图片URL" prop="imgUrl">
-              <el-input v-model="form.imgUrl" placeholder="请输入酒店图片URL" />
+            <el-form-item label="酒店图片" prop="imgUrl">
+              <ImageUpload
+                ref="imageUploadRef"
+                v-model="form.imgUrl"
+                action="/common/upload/oss"
+                :limit="1"
+                :file-size="2"
+                :file-type="['png', 'jpg', 'jpeg']"
+                :auto-upload="false"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -193,6 +201,8 @@ const queryParams = ref({
   star: undefined,
   status: undefined
 })
+
+const imageUploadRef = ref(null)
 
 const form = ref({
   id: undefined,
@@ -289,24 +299,28 @@ function handleUpdate(row) {
   })
 }
 
-function submitForm() {
-  proxy.$refs['hotelRef'].validate(valid => {
-    if (valid) {
-      if (form.value.id != undefined) {
-        updateHotel(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功')
-          open.value = false
-          getList()
-        })
-      } else {
-        addHotel(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功')
-          open.value = false
-          getList()
-        })
-      }
+async function submitForm() {
+  try {
+    await proxy.$refs['hotelRef'].validate()
+  } catch {
+    return
+  }
+  // 先上传图片到OSS
+  if (imageUploadRef.value) {
+    const imgUrl = await imageUploadRef.value.submitUpload()
+    if (imgUrl !== null) {
+      form.value.imgUrl = imgUrl
     }
-  })
+  }
+  if (form.value.id != undefined) {
+    await updateHotel(form.value)
+    proxy.$modal.msgSuccess('修改成功')
+  } else {
+    await addHotel(form.value)
+    proxy.$modal.msgSuccess('新增成功')
+  }
+  open.value = false
+  getList()
 }
 
 function handleStatusChange(row, status) {

@@ -77,18 +77,15 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="商户LOGO" prop="logoUrl">
-                <el-input
+                <ImageUpload
+                  ref="imageUploadRef"
                   v-model="merchantForm.logoUrl"
-                  placeholder="请输入LOGO图片URL（选填）"
-                  clearable
+                  action="/common/upload/oss"
+                  :limit="1"
+                  :file-size="2"
+                  :file-type="['png', 'jpg', 'jpeg']"
+                  :auto-upload="false"
                 />
-                <div v-if="merchantForm.logoUrl" class="logo-preview">
-                  <el-image
-                    :src="merchantForm.logoUrl"
-                    style="width: 80px; height: 80px"
-                    fit="cover"
-                  />
-                </div>
               </el-form-item>
             </el-col>
           </el-row>
@@ -177,8 +174,8 @@
             <el-descriptions-item label="商户简介" :span="2">{{ merchantForm.description || '未填写' }}</el-descriptions-item>
             <el-descriptions-item label="LOGO" :span="2">
               <el-image
-                v-if="merchantForm.logoUrl"
-                :src="merchantForm.logoUrl"
+                v-if="logoPreviewSrc"
+                :src="logoPreviewSrc"
                 style="width: 60px; height: 60px"
                 fit="cover"
               />
@@ -207,7 +204,7 @@
 </template>
 
 <script setup name="MerchantRegister">
-import { ref, onMounted, getCurrentInstance } from 'vue'
+import { ref, computed, onMounted, getCurrentInstance } from 'vue'
 import { addMerchant } from '@/api/biz/merchant'
 import useUserStore from '@/store/modules/user'
 import { useRouter } from 'vue-router'
@@ -263,7 +260,20 @@ const rules = {
 }
 
 const merchantFormRef = ref(null)
+const imageUploadRef = ref(null)
 const submitting = ref(false)
+
+// 获取LOGO预览URL（优先使用已上传的OSS URL，其次使用本地blob预览URL）
+const logoPreviewSrc = computed(() => {
+  // 如果已有上传成功的OSS URL，优先使用
+  if (merchantForm.value.logoUrl && !merchantForm.value.logoUrl.startsWith('blob:')) {
+    return merchantForm.value.logoUrl
+  }
+  // auto-upload=false时，从组件内部的fileList获取blob预览URL
+  const files = imageUploadRef.value?.fileList || []
+  const blobFile = files.find(f => f.url && f.url.startsWith('blob:'))
+  return blobFile?.url || merchantForm.value.logoUrl
+})
 
 // 上一步
 function handlePrevStep() {
@@ -309,50 +319,60 @@ function loadDraft() {
   if (draft) {
     try {
       const draftData = JSON.parse(draft)
+      // 过滤掉无效的 blob URL（上次失败上传遗留）
+      if (draftData.logoUrl && (draftData.logoUrl.startsWith('blob:') || draftData.logoUrl === '')) {
+        delete draftData.logoUrl
+      }
       merchantForm.value = { ...merchantForm.value, ...draftData }
     } catch (e) {
       console.error('加载草稿失败:', e)
+      localStorage.removeItem('merchantDraft')  // 草稿损坏，直接清除
     }
   }
 }
 
 // 提交表单
-function submitForm() {
-  merchantFormRef.value.validate(async (valid) => {
-    if (valid) {
-      submitting.value = true
-
-      try {
-        await addMerchant(merchantForm.value)
-
-        proxy.$modal.msgSuccess('提交成功，请等待审核')
-
-        localStorage.removeItem('merchantDraft')
-
-        setTimeout(() => {
-          // 商户提交后跳转到管理控制台，普通用户回到主页
-          const roles = userStore.roles || []
-          const isMerchantUser = roles.some(r => r === 'merchant' || r === 'ROLE_MERCHANT')
-          router.push(isMerchantUser ? '/dashboard' : '/index')
-        }, 1500)
-      } catch (error) {
-        console.error('提交失败:', error)
-
-        if (error.response && error.response.status === 403) {
-          proxy.$modal.alertError(
-            '权限不足：请先登录并获取商户注册权限。<br/><br/>' +
-            '请联系管理员为您分配商户角色和权限。'
-          )
-        } else {
-          proxy.$modal.msgError(error.message || '提交失败，请稍后重试')
-        }
-      } finally {
-        submitting.value = false
+async function submitForm() {
+  try {
+    await merchantFormRef.value.validate()
+  } catch {
+    proxy.$modal.msgError('请完善所有必填信息')
+    return
+  }
+  submitting.value = true
+  try {
+    // 先上传图片到OSS
+    if (imageUploadRef.value) {
+      const logoUrl = await imageUploadRef.value.submitUpload()
+      if (logoUrl !== null) {
+        merchantForm.value.logoUrl = logoUrl
       }
-    } else {
-      proxy.$modal.msgError('请完善所有必填信息')
     }
-  })
+    await addMerchant(merchantForm.value)
+
+    proxy.$modal.msgSuccess('提交成功，请等待审核')
+
+    localStorage.removeItem('merchantDraft')
+
+    setTimeout(() => {
+      // 商户提交后跳转到管理控制台，普通用户回到主页
+      const roles = userStore.roles || []
+      const isMerchantUser = roles.some(r => r === 'merchant' || r === 'ROLE_MERCHANT')
+      router.push(isMerchantUser ? '/dashboard' : '/index')
+    }, 1500)
+  } catch (error) {
+    console.error('提交失败:', error)
+    if (error.response && error.response.status === 403) {
+      proxy.$modal.alertError(
+        '权限不足：请先登录并获取商户注册权限。<br/><br/>' +
+        '请联系管理员为您分配商户角色和权限。'
+      )
+    } else {
+      proxy.$modal.msgError(error.message || '提交失败，请稍后重试')
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 
 onMounted(() => {

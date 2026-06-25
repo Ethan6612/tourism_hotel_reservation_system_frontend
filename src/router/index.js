@@ -87,6 +87,21 @@ export const constantRoutes = [
     meta: { title: '审核等待中' }
   },
   {
+    path: '/biz/merchant',
+    component: Layout,
+    hidden: true,
+    name: 'BizMerchant',
+    meta: { title: '商户中心', roles: ['merchant', 'ROLE_MERCHANT'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/merchant/index'),
+        name: 'BizMerchantIndex',
+        meta: { title: '商户中心', roles: ['merchant', 'ROLE_MERCHANT'] }
+      }
+    ]
+  },
+  {
     path: '/biz/merchantAudit',
     component: Layout,
     hidden: true,

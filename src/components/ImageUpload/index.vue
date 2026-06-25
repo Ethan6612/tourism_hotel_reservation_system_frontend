@@ -4,6 +4,7 @@
       multiple
       :disabled="disabled"
       :action="uploadImgUrl"
+      :auto-upload="autoUpload"
       list-type="picture-card"
       :on-success="handleUploadSuccess"
       :before-upload="handleBeforeUpload"
@@ -15,7 +16,7 @@
       :before-remove="handleDelete"
       :show-file-list="true"
       :headers="headers"
-      :file-list="fileList"
+      v-model:file-list="fileList"
       :on-preview="handlePictureCardPreview"
       :class="{ hide: fileList.length >= limit }"
     >
@@ -92,6 +93,11 @@ const props = defineProps({
   drag: {
     type: Boolean,
     default: true
+  },
+  // 是否自动上传（false=选择后仅预览，调用submitUpload()才上传）
+  autoUpload: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -99,12 +105,14 @@ const { proxy } = getCurrentInstance()
 const emit = defineEmits()
 const number = ref(0)
 const uploadList = ref([])
+const imageUpload = ref(null)
 const dialogImageUrl = ref("")
 const dialogVisible = ref(false)
 const baseUrl = import.meta.env.VITE_APP_BASE_API
-const uploadImgUrl = ref(import.meta.env.VITE_APP_BASE_API + props.action) // 上传的图片服务器地址
+const uploadImgUrl = ref(import.meta.env.VITE_APP_BASE_API + props.action)
 const headers = ref({ Authorization: "Bearer " + getToken() })
 const fileList = ref([])
+const pendingResolve = ref(null)
 const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
 )
@@ -112,7 +120,14 @@ const showTip = computed(
 watch(() => props.modelValue, val => {
   if (val) {
     // 首先将值转为数组
-    const list = Array.isArray(val) ? val : props.modelValue.split(",")
+    let list = Array.isArray(val) ? val : props.modelValue.split(",")
+    // 过滤掉无效的 blob URL（草稿遗留或上传失败残留）
+    list = list.filter(item => {
+      if (typeof item === "string" && item.startsWith("blob:")) {
+        return false
+      }
+      return item !== '' && item !== undefined && item !== null
+    })
     // 然后将数组转为对象数组
     fileList.value = list.map(item => {
       if (typeof item === "string") {
@@ -130,7 +145,7 @@ watch(() => props.modelValue, val => {
   }
 },{ deep: true, immediate: true })
 
-// 上传前loading加载
+// 上传前校验
 function handleBeforeUpload(file) {
   let isImg = false
   if (props.fileType.length) {
@@ -161,8 +176,11 @@ function handleBeforeUpload(file) {
       return false
     }
   }
-  proxy.$modal.loading("正在上传图片，请稍候...")
-  number.value++
+  // 仅自动上传模式显示加载
+  if (props.autoUpload) {
+    proxy.$modal.loading("正在上传图片，请稍候...")
+    number.value++
+  }
 }
 
 // 文件个数超出
@@ -179,13 +197,17 @@ function handleUploadSuccess(res, file) {
     number.value--
     proxy.$modal.closeLoading()
     proxy.$modal.msgError(res.msg)
-    proxy.$refs.imageUpload.handleRemove(file)
+    imageUpload.value.handleRemove(file)
     uploadedSuccessfully()
   }
 }
 
 // 删除图片
 function handleDelete(file) {
+  // 延迟上传模式：让 el-upload 自行管理删除，v-model:file-list 保持同步
+  if (!props.autoUpload && file.url && file.url.startsWith('blob:')) {
+    return true
+  }
   const findex = fileList.value.map(f => f.name).indexOf(file.name)
   if (findex > -1 && uploadList.value.length === number.value) {
     fileList.value.splice(findex, 1)
@@ -197,11 +219,20 @@ function handleDelete(file) {
 // 上传结束处理
 function uploadedSuccessfully() {
   if (number.value > 0 && uploadList.value.length === number.value) {
-    fileList.value = fileList.value.filter(f => f.url !== undefined).concat(uploadList.value)
+    // 过滤掉本地blob预览URL，用上传后的OSS URL替换
+    fileList.value = fileList.value
+      .filter(f => f.url !== undefined && !f.url.startsWith("blob:"))
+      .concat(uploadList.value)
     uploadList.value = []
     number.value = 0
-    emit("update:modelValue", listToString(fileList.value))
+    const result = listToString(fileList.value)
+    emit("update:modelValue", result)
     proxy.$modal.closeLoading()
+    // 延迟上传模式下，resolve Promise
+    if (pendingResolve.value) {
+      pendingResolve.value(result)
+      pendingResolve.value = null
+    }
   }
 }
 
@@ -209,6 +240,10 @@ function uploadedSuccessfully() {
 function handleUploadError() {
   proxy.$modal.msgError("上传图片失败")
   proxy.$modal.closeLoading()
+  if (pendingResolve.value) {
+    pendingResolve.value(null)
+    pendingResolve.value = null
+  }
 }
 
 // 预览
@@ -217,7 +252,7 @@ function handlePictureCardPreview(file) {
   dialogVisible.value = true
 }
 
-// 对象转成指定字符串分隔
+// 对象转成指定字符串分隔（排除blob本地URL）
 function listToString(list, separator) {
   let strs = ""
   separator = separator || ","
@@ -229,11 +264,28 @@ function listToString(list, separator) {
   return strs != "" ? strs.substr(0, strs.length - 1) : ""
 }
 
+/** 手动触发上传（autoUpload=false时调用），返回Promise<上传后的URL字符串|null> */
+function submitUpload() {
+  return new Promise((resolve) => {
+    // v-model:file-list 已同步 el-upload 内部状态，blob URL 即待上传的本地文件
+    const pendingFiles = fileList.value.filter(f => f.url && f.url.startsWith('blob:'))
+    if (pendingFiles.length === 0) {
+      // 没有待上传的文件，返回当前值
+      resolve(listToString(fileList.value))
+      return
+    }
+    proxy.$modal.loading("正在上传图片，请稍候...")
+    number.value = pendingFiles.length
+    pendingResolve.value = resolve
+    imageUpload.value.submit()
+  })
+}
+
 // 初始化拖拽排序
 onMounted(() => {
   if (props.drag && !props.disabled) {
     nextTick(() => {
-      const element = proxy.$refs.imageUpload?.$el?.querySelector('.el-upload-list')
+      const element = imageUpload.value?.$el?.querySelector('.el-upload-list')
       Sortable.create(element, {
         onEnd: (evt) => {
           const movedItem = fileList.value.splice(evt.oldIndex, 1)[0]
@@ -244,6 +296,8 @@ onMounted(() => {
     })
   }
 })
+
+defineExpose({ submitUpload, fileList })
 </script>
 
 <style scoped lang="scss">
@@ -254,5 +308,5 @@ onMounted(() => {
 
 :deep(.el-upload.el-upload--picture-card.is-disabled) {
   display: none !important;
-} 
+}
 </style>

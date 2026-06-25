@@ -105,9 +105,17 @@
           </el-col>
         </el-row>
         <el-row>
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="LOGO图片" prop="logoUrl">
-              <el-input v-model="editForm.logoUrl" placeholder="请输入LOGO图片URL" />
+              <ImageUpload
+                ref="imageUploadRef"
+                v-model="editForm.logoUrl"
+                action="/common/upload/oss"
+                :limit="1"
+                :file-size="2"
+                :file-type="['png', 'jpg', 'jpeg']"
+                :auto-upload="false"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -148,6 +156,7 @@ const isAdmin = computed(() => {
 const loading = ref(true)
 const editOpen = ref(false)
 const submitting = ref(false)
+const imageUploadRef = ref(null)
 const dialogTitle = ref('编辑商户信息')
 const merchantInfo = ref(null)
 
@@ -249,19 +258,28 @@ function handleEdit() {
 }
 
 /** 提交编辑 */
-function submitEdit() {
-  proxy.$refs['merchantRef'].validate(valid => {
-    if (valid) {
-      submitting.value = true
-      updateMerchant(editForm.value).then(() => {
-        proxy.$modal.msgSuccess('修改成功')
-        editOpen.value = false
-        loadMerchantInfo()
-      }).finally(() => {
-        submitting.value = false
-      })
+async function submitEdit() {
+  try {
+    await proxy.$refs['merchantRef'].validate()
+  } catch {
+    return
+  }
+  submitting.value = true
+  try {
+    // 先上传图片到OSS
+    if (imageUploadRef.value) {
+      const logoUrl = await imageUploadRef.value.submitUpload()
+      if (logoUrl !== null) {
+        editForm.value.logoUrl = logoUrl
+      }
     }
-  })
+    await updateMerchant(editForm.value)
+    proxy.$modal.msgSuccess('修改成功')
+    editOpen.value = false
+    loadMerchantInfo()
+  } finally {
+    submitting.value = false
+  }
 }
 
 onMounted(() => {
