@@ -521,9 +521,18 @@ async function fetchHotels() {
     }
 
     const res = await searchHotels(params)
-    if (res.code === 200) {
-      const data = res.data
-      const rows = data.rows || []
+    console.log('搜索响应:', res)
+    // 响应拦截器已解包：res 就是 { rows, total } 或 { code, data: { rows, total } } 或空数组
+    const data = res.data || res
+    // 兼容空数组降级（公开接口 401 时返回 []）
+    if (Array.isArray(data)) {
+      hotels.value = []
+      total.value = 0
+      loading.value = false
+      return
+    }
+    const rows = data.rows || []
+    if (rows.length > 0) {
 
       // 处理返回的酒店数据，统一字段名
       hotels.value = rows.map(hotel => {
@@ -564,7 +573,9 @@ async function fetchHotels() {
       // 获取每个酒店的房型最低价格
       await fetchHotelsMinPrice()
     } else {
-      ElMessage.error(res.message || '搜索失败')
+      // 后端返回空列表（rows = []），正常显示空状态
+      hotels.value = []
+      total.value = data.total || 0
     }
   } catch (error) {
     console.error('搜索酒店失败:', error)

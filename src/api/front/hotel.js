@@ -4,8 +4,9 @@ import { getToken } from '@/utils/auth'
 // 公开接口：有token就带，没有也不报错
 function publicRequest(config) {
   const token = getToken()
+  config.metadata = { noAuthDialog: true }
   if (!token) {
-    config.headers = { ...(config.headers || {}), isToken: false, noAuthDialog: true }
+    config.headers = { ...(config.headers || {}), isToken: false }
   }
   return request(config)
 }

@@ -22,10 +22,10 @@ const service = axios.create({
 
 // request拦截器
 service.interceptors.request.use(config => {
-  // 是否需要设置 token
-  const isToken = (config.headers || {}).isToken === false
+  // 是否需要设置 token（兼容 boolean 和 string）
+  const isToken = (config.headers || {}).isToken === false || (config.headers || {}).isToken === 'false'
   // 是否需要防止数据重复提交
-  const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
+  const isRepeatSubmit = (config.headers || {}).repeatSubmit === false || (config.headers || {}).repeatSubmit === 'false'
   // 间隔时间(ms)，小于此时间视为重复提交
   const interval = (config.headers || {}).interval || 1000
   const token = getToken()
@@ -34,6 +34,12 @@ service.interceptors.request.use(config => {
     console.log('Request URL:', config.url, 'Token:', token.substring(0, 20) + '...')
   } else if (!token && !isToken) {
     console.warn('Request URL:', config.url, 'Warning: No token found!')
+  }
+  // 清理内部自定义标记，防止作为 HTTP 头发送给后端
+  if (config.headers) {
+    delete config.headers.isToken
+    delete config.headers.repeatSubmit
+    delete config.headers.interval
   }
   // get请求映射params参数
   if (config.method === 'get' && config.params) {
@@ -86,7 +92,17 @@ service.interceptors.response.use(res => {
       return res.data
     }
     if (code === 401) {
-      // 只有已登录用户(token存在)才提示"登录状态已过期"，未登录用户直接忽略
+      // 公开接口（游客可访问）：静默返回空数据，不弹框不抛错
+      // 支持 metadata.noAuthDialog 标记方式（主要）和 isToken 标记（兼容旧代码）
+      const isPublicAPI = res.config?.metadata?.noAuthDialog
+        || res.config?.headers?.isToken === false
+        || res.config?.headers?.isToken === 'false'
+      if (isPublicAPI) {
+        // 返回空数组，兼容首页（数组）和搜索页（{rows,total}）两种响应格式
+        console.warn('公开接口 401 降级，URL:', res.config?.url, '返回空数据')
+        return Promise.resolve({ code: 200, data: [], msg: 'ok' })
+      }
+      // 已登录用户：提示登录过期
       if (getToken()) {
         if (!isRelogin.show) {
           isRelogin.show = true

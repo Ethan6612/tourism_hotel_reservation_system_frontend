@@ -348,86 +348,6 @@ function logout() {
   })
 }
 
-// 模拟热门城市数据
-const mockCities = [
-  { name: '北京', hotelCount: 2356, image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=300&h=200&fit=crop' },
-  { name: '上海', hotelCount: 3120, image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop' },
-  { name: '广州', hotelCount: 1890, image: 'https://images.unsplash.com/photo-1559656914944-3d2426425947?w=300&h=200&fit=crop' },
-  { name: '深圳', hotelCount: 1650, image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=300&h=200&fit=crop' },
-  { name: '成都', hotelCount: 1450, image: 'https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?w=300&h=200&fit=crop' },
-  { name: '杭州', hotelCount: 1380, image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&h=200&fit=crop' }
-]
-
-// 模拟酒店数据
-const mockHotels = [
-  {
-    id: 1,
-    hotelName: '北京希尔顿酒店管理有限公司',
-    address: '北京市东城区王府井大街1号',
-    score: 4.9,
-    reviewCount: 789,
-    minPrice: 1280,
-    coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop',
-    tag: '高档',
-    facilities: ['免费WiFi', '停车场', '游泳池', '健身房']
-  },
-  {
-    id: 2,
-    hotelName: '上海华尔道夫大酒店管理',
-    address: '上海市黄浦区中山东一路2号',
-    score: 4.8,
-    reviewCount: 654,
-    minPrice: 1580,
-    coverImage: 'https://images.unsplash.com/photo-1551882547-be7b2a60087d?w=200&h=150&fit=crop',
-    tag: '奢华',
-    facilities: ['免费WiFi', '停车场', 'SPA', '餐厅']
-  },
-  {
-    id: 3,
-    hotelName: '广州丽思卡尔顿酒店',
-    address: '广州市天河区珠江新城兴安路3号',
-    score: 4.9,
-    reviewCount: 890,
-    minPrice: 1380,
-    coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop',
-    tag: '高档',
-    facilities: ['免费WiFi', '停车场', '游泳池', '商务中心']
-  },
-  {
-    id: 4,
-    hotelName: '深圳香格里拉酒店有限公司',
-    address: '深圳市福田区中心四路1号',
-    score: 4.7,
-    reviewCount: 567,
-    minPrice: 1180,
-    coverImage: 'https://images.unsplash.com/photo-1551882547-be7b2a60087d?w=200&h=150&fit=crop',
-    tag: '高档',
-    facilities: ['免费WiFi', '停车场', '健身房', '餐厅']
-  },
-  {
-    id: 5,
-    hotelName: '杭州西湖国宾馆有限公司',
-    address: '杭州市西湖区杨公堤1号',
-    score: 4.9,
-    reviewCount: 1200,
-    minPrice: 1680,
-    coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop',
-    tag: '奢华',
-    facilities: ['免费WiFi', '停车场', '游泳池', '花园']
-  },
-  {
-    id: 6,
-    hotelName: '成都尼依格罗酒店有限公司',
-    address: '成都市锦江区红星路三段1号',
-    score: 4.8,
-    reviewCount: 720,
-    minPrice: 1480,
-    coverImage: 'https://images.unsplash.com/photo-1551882547-be7b2a60087d?w=200&h=150&fit=crop',
-    tag: '高档',
-    facilities: ['免费WiFi', '停车场', 'SPA', '健身房']
-  }
-]
-
 function handleSearch() {
   console.log('搜索条件:', searchForm.value)
   // 跳转到搜索结果页面
@@ -481,10 +401,11 @@ async function loadHotCities() {
     } else if (data?.rows?.length) {
       hotCities.value = data.rows
     } else {
-      hotCities.value = mockCities
+      hotCities.value = []
     }
-  } catch {
-    hotCities.value = mockCities
+  } catch (error) {
+    console.error('加载热门城市失败:', error)
+    hotCities.value = []
   }
 }
 
@@ -497,10 +418,11 @@ async function loadHotels() {
     } else if (data?.rows?.length) {
       hotels.value = data.rows
     } else {
-      hotels.value = mockHotels
+      hotels.value = []
     }
-  } catch {
-    hotels.value = mockHotels
+  } catch (error) {
+    console.error('加载推荐酒店失败:', error)
+    hotels.value = []
   }
 }
 
@@ -510,8 +432,10 @@ async function loadHotSalesRank() {
     const data = res.data || res
     if (Array.isArray(data)) hotSalesRank.value = data
     else if (data && Array.isArray(data.rows)) hotSalesRank.value = data.rows
-  } catch {
-    // API不可用时用mock数据
+    else hotSalesRank.value = []
+  } catch (error) {
+    console.error('加载热销排行失败:', error)
+    hotSalesRank.value = []
   }
 }
 </script>
