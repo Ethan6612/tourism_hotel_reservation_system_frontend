@@ -633,9 +633,35 @@ async function createOrderRequest(roomId, checkIn, checkOut) {
 async function loadHotelData() {
   try {
     const res = await getHotelDetail(route.params.id)
-    const data = res.data || res
-    if (data) {
-      hotel.value = { ...hotel.value, ...data }
+    const apiData = res.data || res
+    // 只有有效对象（非数组、非null）才处理，防止 401 降级返回 []
+    if (apiData && typeof apiData === 'object' && !Array.isArray(apiData)) {
+      // 字段映射：API 的 VO 字段 → 模板使用的字段
+      const mapped = {
+        // 基础信息映射
+        hotelName: apiData.name || apiData.hotelName,
+        address: apiData.address,
+        star: apiData.star,
+        score: apiData.score,
+        phone: apiData.phone,
+        intro: apiData.intro,
+        minPrice: apiData.minPrice,
+
+        // 图片：VO 返回单张 imgUrl，转为 images 数组
+        images: apiData.imgUrl
+          ? [apiData.imgUrl, apiData.imgUrl, apiData.imgUrl, apiData.imgUrl, apiData.imgUrl]
+          : hotel.value.images,
+
+        // 设施：VO 返回 facilityList（字符串数组），转为 facility 对象数组
+        facilities: apiData.facilityList?.length
+          ? apiData.facilityList.map(f => ({ icon: '✅', name: f, description: f }))
+          : hotel.value.facilities,
+
+        // 房型列表（VO 的 roomList）
+        roomList: apiData.roomList || [],
+      }
+      // 合并：mock 数据兜底，API 数据覆盖
+      hotel.value = { ...hotel.value, ...mapped }
     }
   } catch { /* 使用默认数据 */ }
 }

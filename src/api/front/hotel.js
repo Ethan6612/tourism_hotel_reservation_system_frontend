@@ -16,9 +16,9 @@ export function searchHotels(query) {
   return publicRequest({ url: '/api/hotel/search', method: 'post', data: query })
 }
 
-// 查询酒店详情
+// 查询酒店详情（公开接口）
 export function getHotelDetail(id) {
-  return publicRequest({ url: '/api/hotel/' + id, method: 'get' })
+  return publicRequest({ url: '/api/hotel/detail/' + id, method: 'get' })
 }
 
 // 查询酒店房间列表
