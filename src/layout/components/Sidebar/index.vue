@@ -38,20 +38,7 @@ const settingsStore = useSettingsStore()
 const permissionStore = usePermissionStore()
 
 const sidebarRouters = computed(() => {
-  const routes = permissionStore.sidebarRouters
-  
-  // 查找业务管理菜单
-  const bizRoute = routes.find(r => r.path === '/biz')
-  if (bizRoute) {
-    
-    if (bizRoute.children) {
-      bizRoute.children.forEach(child => {
-      })
-    }
-  }
-  
-  
-  return routes
+  return permissionStore.sidebarRouters
 })
 const showLogo = computed(() => settingsStore.sidebarLogo)
 const sideTheme = computed(() => settingsStore.sideTheme)

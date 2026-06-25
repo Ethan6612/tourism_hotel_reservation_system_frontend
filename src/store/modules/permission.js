@@ -82,24 +82,6 @@ const usePermissionStore = defineStore(
         this.topbarRouters = routes
       },
       setSidebarRouters(routes) {
-        // 🔒 保护逻辑：如果当前已经有过滤后的路由，检查新路由是否包含被过滤掉的菜单
-        if (this.sidebarRouters && this.sidebarRouters.length > 0) {
-          // 查找业务管理菜单
-          const currentBizRoute = this.sidebarRouters.find(r => r.path === '/biz')
-          const newBizRoute = routes.find(r => r.path === '/biz')
-          
-          if (currentBizRoute && newBizRoute && currentBizRoute.children && newBizRoute.children) {
-            // 比较子菜单数量
-            const currentCount = currentBizRoute.children.length
-            const newCount = newBizRoute.children.length
-            
-            // 如果新路由的子菜单更多，说明可能是未过滤的全量路由，拒绝覆盖
-            if (newCount > currentCount) {
-              return // 拒绝更新
-            }
-          }
-        }
-        
         this.sidebarRouters = routes
       },
       // 清除路由
@@ -120,12 +102,22 @@ const usePermissionStore = defineStore(
         return new Promise(resolve => {
           // 向后端请求路由数据
           getRouters().then(res => {
-            const sdata = JSON.parse(JSON.stringify(res.data))
-            const rdata = JSON.parse(JSON.stringify(res.data))
-            const defaultData = JSON.parse(JSON.stringify(res.data))
+            let rawData = JSON.parse(JSON.stringify(res.data))
+
+            // 管理员角色屏蔽商家专属菜单（必须在 filterAsyncRouter 之前，此时 component 还是字符串）
+            const userRoles = useUserStore().roles
+            const isAdmin = userRoles.some(r => r === 'admin' || r === 'ROLE_ADMIN')
+            if (isAdmin) {
+              rawData = filterMerchantMenus(rawData)
+            }
+
+            const sdata = JSON.parse(JSON.stringify(rawData))
+            const rdata = JSON.parse(JSON.stringify(rawData))
+            const defaultData = JSON.parse(JSON.stringify(rawData))
             const sidebarRoutes = filterAsyncRouter(sdata)
             const rewriteRoutes = filterAsyncRouter(rdata, false, true)
             const defaultRoutes = filterAsyncRouter(defaultData)
+
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
             this.setRoutes(rewriteRoutes)
@@ -145,6 +137,40 @@ const usePermissionStore = defineStore(
       }
     }
   })
+
+// 商家专属组件路径，管理员侧边栏需屏蔽
+const MERCHANT_ONLY_COMPONENTS = [
+  'biz/hotel/index',
+  'biz/room/index',
+  'biz/statistics/index',
+  'biz/statistics/report',
+  'biz/notice/index',
+  'biz/merchantComments'
+]
+
+// 过滤掉管理员不需要看到的商家专属菜单
+function filterMerchantMenus(routes) {
+  return routes.filter(route => {
+    if (route.children) {
+      route.children = filterMerchantMenus(route.children)
+    }
+    // 按组件路径过滤商家专属页面
+    if (route.component && typeof route.component === 'string') {
+      if (MERCHANT_ONLY_COMPONENTS.includes(route.component)) {
+        return false
+      }
+    }
+    // 按标题过滤"商户中心"（商家的主页，管理员有自己的"商户管理"）
+    if (route.meta && route.meta.title === '商户中心') {
+      return false
+    }
+    // 过滤后如果子菜单全没了，且自身不是页面，则去掉空目录
+    if (route.children && route.children.length === 0 && !route.component) {
+      return false
+    }
+    return true
+  })
+}
 
 // 遍历后台传来的路由字符串，转换为组件对象
 function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
