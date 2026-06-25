@@ -11,7 +11,7 @@ import usePermissionStore from '@/store/modules/permission'
 
 NProgress.configure({ showSpinner: false })
 
-const whiteList = ['/login', '/register', '/index', '/merchant/register', '/merchant/pending']
+const whiteList = ['/login', '/register', '/index', '/search', '/merchant/register', '/merchant/pending']
 
 // ✅ 防止路由守卫重复执行的标记
 let isCheckingMerchant = false
@@ -81,6 +81,12 @@ router.beforeEach(async (to, from, next) => {
         const isAdmin = userRoles.some(role => role === 'admin' || role === 'ROLE_ADMIN')
         const isMerchant = userRoles.some(role => role === 'merchant' || role === 'ROLE_MERCHANT')
         
+        // 🔒 管理员不能访问前台主页，重定向到控制台
+        if (isAdmin && (to.path === '/index' || to.path === '/home')) {
+          next({ path: '/dashboard', replace: true })
+          return
+        }
+
         // 🔒 商户用户不能访问前台主页，重定向到商户中心
         if (isMerchant && (to.path === '/index' || to.path === '/home')) {
           next({ path: '/biz/merchant', replace: true })

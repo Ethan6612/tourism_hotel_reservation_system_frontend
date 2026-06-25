@@ -8,10 +8,10 @@
           <span class="logo-text">ZSC酒店预订</span>
         </div>
         <nav class="nav">
-          <a href="#" class="nav-item active">首页</a>
+          <a href="/home" class="nav-item active">首页</a>
+          <a href="/search" class="nav-item">酒店</a>
           <a href="#" class="nav-item" @click.prevent="scrollToSection('orders')">我的订单</a>
           <a href="#" class="nav-item" @click.prevent="scrollToSection('reviews')">我的评价</a>
-          <a href="#" class="nav-item" @click.prevent="scrollToSection('recommend')">酒店推荐</a>
         </nav>
         <div class="user-actions">
           <template v-if="isLoggedIn">
@@ -594,12 +594,12 @@ function handleSearch() {
     starLevel: searchForm.value.starLevel || undefined,
     keyword: searchForm.value.keyword || undefined
   }
-  router.push({ path: '/hotel/search', query: q })
+  router.push({ path: '/search', query: q })
 }
 
 function switchHotelTab(key) { activeHotelTab.value = key; loadHotels() }
 function goToHotelDetail(id) { router.push('/hotel/' + id) }
-function goToHotelList() { router.push('/hotel/search') }
+function goToHotelList() { router.push('/search') }
 
 // 订单 / 评价 / 收藏
 function getOrderStatusType(s) {
@@ -1152,14 +1152,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   background: linear-gradient(135deg, #ff6b6b, #ee5a24);
   color: #fff;
   border: none;
-  padding: 0 28px;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
+  padding: 0 32px;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
   height: 52px;
@@ -1170,7 +1170,6 @@ onUnmounted(() => {
 
 .search-btn-inline:hover {
   opacity: 0.9;
-  box-shadow: 0 4px 16px rgba(255, 107, 107, 0.35);
 }
 
 /* ==================== 统计卡片 ==================== */

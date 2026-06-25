@@ -86,6 +86,11 @@ service.interceptors.response.use(res => {
       return res.data
     }
     if (code === 401) {
+      // 标记了 noAuthDialog 的请求（如游客可访问的公开接口），静默失败不弹框
+      const noAuthDialog = res.config?.headers?.noAuthDialog
+      if (noAuthDialog) {
+        return Promise.reject(new Error('未登录'))
+      }
       if (!isRelogin.show) {
         isRelogin.show = true
         ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {

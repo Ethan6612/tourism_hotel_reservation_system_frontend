@@ -148,9 +148,9 @@
       <!-- 游客登录 -->
       <div class="visitor-section">
         <el-divider>或</el-divider>
-        <el-button size="large" style="width: 100%;" @click.prevent="handleVisitorLogin">
+        <button type="button" class="visitor-btn" @click="handleVisitorLogin">
           游客登录（无需注册）
-        </el-button>
+        </button>
         <p class="visitor-tip">游客可浏览酒店信息，预订和评价需注册登录</p>
       </div>
     </div>
@@ -532,6 +532,7 @@ getCookie()
   animation: slideUp 0.5s ease-out;
   display: flex;
   flex-direction: column;
+  overflow: visible;
 }
 
 @keyframes slideUp {
@@ -784,6 +785,25 @@ getCookie()
     color: #ff7a45;
     background: rgba(255, 122, 69, 0.05);
   }
+}
+
+.visitor-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid #dcdfe6;
+  font-size: 15px;
+  font-weight: 500;
+  color: #606266;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.visitor-btn:hover {
+  border-color: #ff7a45;
+  color: #ff7a45;
+  background: rgba(255, 122, 69, 0.05);
 }
 
 .visitor-tip {

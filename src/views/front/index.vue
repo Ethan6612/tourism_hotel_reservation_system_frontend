@@ -10,7 +10,6 @@
         <nav class="nav">
           <a href="/index" class="nav-item active">首页</a>
           <a href="/search" class="nav-item">酒店</a>
-          <a href="#" class="nav-item">攻略</a>
           <a href="#" class="nav-item">关于我们</a>
         </nav>
         <div class="user-actions">
@@ -28,12 +27,14 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                   <el-dropdown-item command="orders">我的订单</el-dropdown-item>
                   <el-dropdown-item command="points">我的积分</el-dropdown-item>
                   <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
-                  <el-dropdown-item command="merchant" v-if="isMerchant">我的商户</el-dropdown-item>
-                  <el-dropdown-item command="console" v-if="isAdmin" divided>前往控制台</el-dropdown-item>
-                  <el-dropdown-item command="logout" :divided="!isAdmin && !isMerchant">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
+                  <el-dropdown-item command="merchant" v-if="isMerchant" divided>我的商户</el-dropdown-item>
+                  <el-dropdown-item command="console" v-if="isAdmin || isMerchant" divided>前往控制台</el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -298,6 +299,9 @@ const isMerchant = computed(() => {
 
 function handleUserCommand(command) {
   switch (command) {
+    case 'profile':
+      router.push('/user/profile')
+      break
     case 'orders':
       router.push('/user/profile/orders')
       break
@@ -307,9 +311,11 @@ function handleUserCommand(command) {
     case 'reviews':
       router.push('/user/myComments')
       break
+    case 'favorites':
+      router.push('/user/profile/favorites')
+      break
     case 'merchant':
-      // ✅ 商户用户点击"我的商户"，跳转到评价管理页面
-      router.push('/biz/comment')
+      router.push('/biz/merchant')
       break
     case 'console':
       router.push('/dashboard')
@@ -458,15 +464,46 @@ function goToHotelDetail(hotelId) {
 }
 
 onMounted(() => {
-  // 获取热门城市
-  hotCities.value = mockCities
-
-  // 获取推荐酒店
-  hotels.value = mockHotels
-
-  // 获取热销排行
+  loadHotCities()
+  loadHotels()
   loadHotSalesRank()
 })
+
+async function loadHotCities() {
+  try {
+    const res = await getHotCities()
+    const data = res.data || res
+    if (Array.isArray(data) && data.length > 0) {
+      hotCities.value = data.map(c => ({
+        name: c.name || c.cityName,
+        hotelCount: c.hotelCount || c.count || 0,
+        image: c.image || c.img || c.pic || `https://images.unsplash.com/photo-1564507592333-c60657eea523?w=300&h=200&fit=crop`
+      }))
+    } else if (data?.rows?.length) {
+      hotCities.value = data.rows
+    } else {
+      hotCities.value = mockCities
+    }
+  } catch {
+    hotCities.value = mockCities
+  }
+}
+
+async function loadHotels() {
+  try {
+    const res = await getRecommendHotels()
+    const data = res.data || res
+    if (Array.isArray(data) && data.length > 0) {
+      hotels.value = data
+    } else if (data?.rows?.length) {
+      hotels.value = data.rows
+    } else {
+      hotels.value = mockHotels
+    }
+  } catch {
+    hotels.value = mockHotels
+  }
+}
 
 async function loadHotSalesRank() {
   try {

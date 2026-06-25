@@ -8,13 +8,16 @@
           <span class="logo-text">ZSC酒店预订</span>
         </div>
         <nav class="nav">
-          <a href="/index" class="nav-item">首页</a>
-          <a href="#" class="nav-item active">酒店</a>
-          <a href="#" class="nav-item">攻略</a>
-          <a href="#" class="nav-item">关于我们</a>
+          <a :href="isLoggedIn ? '/home' : '/index'" class="nav-item">首页</a>
+          <a href="/search" class="nav-item active">酒店</a>
+          <a v-if="isLoggedIn" href="#" class="nav-item" @click.prevent="router.push('/user/profile/orders')">我的订单</a>
+          <a v-if="isLoggedIn" href="#" class="nav-item" @click.prevent="router.push('/user/myComments')">我的评价</a>
         </nav>
         <div class="user-actions">
           <template v-if="isLoggedIn">
+            <div class="notification-bell" @click="goToNotifications">
+              <span class="bell-icon">🔔</span>
+            </div>
             <el-dropdown @command="handleUserCommand" trigger="hover">
               <span class="user-dropdown">
                 <span class="user-avatar">{{ userAvatar }}</span>
@@ -23,16 +26,21 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="merchant" v-if="isMerchant">我的商户</el-dropdown-item>
-                  <el-dropdown-item command="console" v-if="isAdmin">前往控制台</el-dropdown-item>
-                  <el-dropdown-item command="logout" :divided="isMerchant || isAdmin">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                  <el-dropdown-item command="orders">我的订单</el-dropdown-item>
+                  <el-dropdown-item command="points">我的积分</el-dropdown-item>
+                  <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
+                  <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
+                  <el-dropdown-item command="merchant" v-if="isMerchant" divided>我的商户</el-dropdown-item>
+                  <el-dropdown-item command="console" v-if="isAdmin || isMerchant" divided>前往控制台</el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
           </template>
           <template v-else>
             <button class="action-btn" @click="goToLogin">登录</button>
-            <button class="action-btn primary">注册</button>
+            <button class="action-btn primary" @click="goToRegister">注册</button>
           </template>
         </div>
       </div>
@@ -608,7 +616,19 @@ function goToHotelDetail(hotelId) {
 
 // 跳转到首页
 function goToHome() {
-  router.push('/index')
+  if (isLoggedIn.value) {
+    router.push('/home')
+  } else {
+    router.push('/index')
+  }
+}
+
+function goToNotifications() {
+  router.push('/user/profile/orders')
+}
+
+function goToRegister() {
+  router.push('/register')
 }
 
 // 跳转到登录
@@ -619,6 +639,21 @@ function goToLogin() {
 // 用户命令处理
 function handleUserCommand(command) {
   switch (command) {
+    case 'profile':
+      router.push('/user/profile')
+      break
+    case 'orders':
+      router.push('/user/profile/orders')
+      break
+    case 'points':
+      router.push('/user/profile/points')
+      break
+    case 'reviews':
+      router.push('/user/myComments')
+      break
+    case 'favorites':
+      router.push('/user/profile/favorites')
+      break
     case 'merchant':
       router.push('/biz/merchant')
       break
@@ -748,6 +783,15 @@ onMounted(() => {
 .user-dropdown:hover {
   background: rgba(0, 0, 0, 0.05);
 }
+
+.notification-bell {
+  position: relative;
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 4px;
+}
+
+.bell-icon { font-size: 18px; }
 
 .user-avatar {
   width: 32px;
