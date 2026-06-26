@@ -181,16 +181,16 @@ async function handleFileChange(e) {
     formData.append('file', file)
     try {
       const base = import.meta.env.VITE_APP_BASE_API || ''
-      const res = await fetch(base + '/api/upload/image', { method: 'POST', body: formData })
+      const res = await fetch(base + '/common/upload/oss', { method: 'POST', body: formData })
       if (!res.ok) throw new Error('上传失败')
       const json = await res.json()
       if (json.code === 200) {
-        form.value.images.push(json.data || json.msg)
+        form.value.images.push(json.url)
       } else {
         throw new Error(json.msg || '上传失败')
       }
-    } catch {
-      // 上传失败时使用本地预览
+    } catch (err) {
+      console.warn('OSS上传失败，降级到本地预览:', err)
       const url = URL.createObjectURL(file)
       form.value.images.push(url)
     }
