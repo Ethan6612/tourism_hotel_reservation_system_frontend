@@ -369,10 +369,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
-import { likeComment, getCommentLikes } from '@/api/biz/comment'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 import { getHotelDetail, getHotelRooms } from '@/api/front/hotel'
+import { listCommentByHotel, likeComment, getCommentLikes } from '@/api/biz/comment'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -534,52 +534,37 @@ const rooms = ref([
   }
 ])
 
-// 评价分布
-const ratingDistribution = ref([
-  { label: '5分', percentage: 75, count: 942 },
-  { label: '4分', percentage: 18, count: 226 },
-  { label: '3分', percentage: 5, count: 63 },
-  { label: '2分', percentage: 1, count: 13 },
-  { label: '1分', percentage: 1, count: 12 }
-])
-
 // 评价数据
-const reviews = ref([
-  {
-    id: 1, userId: 2,
-    userName: '张先生',
-    score: 4.9,
-    time: '2026-06-10',
-    content: '酒店位置非常好，就在王府井旁边，逛街购物很方便。房间干净整洁，设施齐全，床很舒服。早餐品种丰富，服务态度也很好。下次来北京还会选择这家酒店！',
-    reply: null,
-    likeCount: 5, _liked: false
-  },
-  {
-    id: 2, userId: 3,
-    userName: '李女士',
-    score: 4.8,
-    time: '2026-06-08',
-    content: '带着家人来北京旅游，选择了这家酒店。酒店环境很好，房间很大，孩子很喜欢。前台服务很热情，还帮忙介绍了周边的景点和美食。唯一不足的是停车位有点紧张。',
-    reply: '尊敬的客人，感谢您的入住和好评！停车位紧张的问题我们已经反馈给相关部门，会尽快改善。期待您再次光临！',
-    likeCount: 3, _liked: false
-  },
-  {
-    id: 3, userId: 4,
-    userName: '王经理',
-    score: 4.7,
-    time: '2026-06-05',
-    content: '出差住的这家酒店，商务设施很完善，WiFi速度也很快。会议室设备齐全，满足了我们的会议需求。地理位置优越，离机场也比较方便。',
-    reply: null
-  },
-  {
-    id: 4,
-    userName: '陈小姐',
-    score: 4.9,
-    time: '2026-06-03',
-    content: '朋友推荐的这家酒店，果然没有失望！房间超大，窗外风景很美。SPA体验很棒，服务人员很专业。早餐也很棒，中西结合，选择很多。强烈推荐！',
-    reply: null
-  }
-])
+const reviews = ref([])
+const ratingDistribution = ref([])
+
+async function loadReviews() {
+  try {
+    const hotelId = route.params.id
+    const res = await listCommentByHotel(hotelId, { pageNum: 1, pageSize: 50, status: '1' })
+    const list = (res.data?.rows || res.data?.list || res.rows || []).map(r => ({
+      id: r.id, userId: r.userId,
+      userName: r.isAnonymous === '1' ? '匿名用户' : (r.userName || '匿名用户'),
+      score: r.score,
+      time: r.createTime ? r.createTime.substring(0, 10) : '',
+      content: r.content,
+      reply: r.replyContent,
+      likeCount: r.likeCount || 0,
+      _liked: r.liked || false
+    }))
+    reviews.value = list
+    const dist = [0, 0, 0, 0, 0]
+    list.forEach(r => { if (r.score >= 1 && r.score <= 5) dist[5 - r.score]++ })
+    const total = list.length || 1
+    const labels = ['5分', '4分', '3分', '2分', '1分']
+    ratingDistribution.value = dist.map((c, i) => ({ label: labels[i], percentage: Math.round(c / total * 100), count: c }))
+    if (list.length > 0) {
+      const avg = (list.reduce((s, r) => s + r.score, 0) / list.length).toFixed(1)
+      hotel.value.score = avg
+      hotel.value.reviewCount = list.length
+    }
+  } catch { /* 评价加载失败 */ }
+}
 
 // 当前显示的图片
 const currentImage = computed(() => hotel.value.images[currentImageIndex.value])
@@ -777,9 +762,10 @@ onMounted(() => {
   booking.value.checkIn = tomorrow.toISOString().split('T')[0]
   booking.value.checkOut = dayAfterTomorrow.toISOString().split('T')[0]
 
-  // 加载真实酒店和房型数据
+  // 加载真实酒店、房型和评价数据
   loadHotelData()
   loadRooms()
+  loadReviews()
 })
 </script>
 

@@ -160,6 +160,21 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/system/appeal',
+    component: Layout,
+    hidden: true,
+    name: 'SystemAppeal',
+    meta: { title: '申诉管理', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/appeal/index'),
+        name: 'SystemAppealIndex',
+        meta: { title: '申诉管理', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true
