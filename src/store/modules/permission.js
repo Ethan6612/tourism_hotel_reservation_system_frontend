@@ -145,7 +145,8 @@ const MERCHANT_ONLY_COMPONENTS = [
   'biz/statistics/index',
   'biz/statistics/report',
   'biz/notice/index',
-  'biz/merchantComments'
+  'biz/merchantComments',
+  'biz/merchant/order'
 ]
 
 // 过滤掉管理员不需要看到的商家专属菜单

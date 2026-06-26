@@ -30,7 +30,7 @@
           </el-card>
         </el-col>
         <el-col :xs="12" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
+          <el-card class="stat-card clickable" shadow="hover" @click="goToOrders">
             <div class="stat-content">
               <div class="stat-icon order-icon">
                 <el-icon :size="36"><Tickets /></el-icon>
@@ -127,7 +127,7 @@
           </el-card>
         </el-col>
         <el-col :xs="12" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
+          <el-card class="stat-card clickable" shadow="hover" @click="goToOrders">
             <div class="stat-content">
               <div class="stat-icon order-icon">
                 <el-icon :size="36"><Tickets /></el-icon>
@@ -240,6 +240,7 @@ const recentOrders = ref([])
 const merchantRankList = ref([])
 const hotelRankList = ref([])
 
+function goToOrders() { router.push('/biz/order') }
 function formatAmount(val) {
   if (val == null || val === 0) return '0'
   const num = Number(val)
@@ -396,6 +397,7 @@ onMounted(async () => {
     // 商户：先检查审核状态，再加载商户专用数据
     await checkMerchantBeforeLoad()
     if (merchantReady.value) {
+      await loadRecentOrders()
       await loadMerchantDashboardData()
       await loadMerchantHotelRank()
       const roomData = await loadMerchantRoomTypeData()
@@ -440,6 +442,7 @@ async function checkMerchantBeforeLoad() {
 
     .stat-card {
       transition: all 0.3s;
+      &.clickable { cursor: pointer; }
       &:hover { transform: translateY(-5px); }
 
       .stat-content {

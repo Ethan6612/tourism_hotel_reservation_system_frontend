@@ -92,10 +92,16 @@
           </button>
         </div>
 
+        <!-- 搜索框 -->
+        <div class="search-bar">
+          <input v-model="orderSearchKey" placeholder="搜索订单（酒店名/订单号/房型）" class="search-input" />
+          <span v-if="orderSearchKey" class="search-clear" @click="orderSearchKey = ''">✕</span>
+        </div>
+
         <!-- 订单列表 -->
         <div v-loading="loading" class="order-list-section">
-          <template v-if="orderList.length > 0">
-            <div v-for="order in orderList" :key="order.id" class="order-card">
+          <template v-if="filteredOrderList.length > 0">
+            <div v-for="order in filteredOrderList" :key="order.id" class="order-card">
               <!-- 订单头部 -->
               <div class="order-card-header">
                 <div class="order-hotel-info">
@@ -198,6 +204,10 @@
           </template>
 
           <!-- 空状态 -->
+          <div v-else-if="orderSearchKey && orderList.length > 0" class="empty-state">
+            <span class="empty-icon">🔍</span>
+            <p>未找到匹配的订单</p>
+          </div>
           <div v-else class="empty-state">
             <span class="empty-icon">📋</span>
             <p v-if="activeTab === 'all'">暂无订单记录</p>
@@ -283,6 +293,7 @@ import { ArrowDown } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 import { listMyOrders, getOrderDetail, cancelOrder, deleteOrder, getUserDashboardStats, initiatePay, confirmPay } from '@/api/front/userHome'
+import QRCode from 'qrcode'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -305,6 +316,16 @@ const payDialogOpen = ref(false)
 const payingOrder = ref({})
 const payQrCode = ref('')
 const paying = ref(false)
+const orderSearchKey = ref('')
+const filteredOrderList = computed(() => {
+  if (!orderSearchKey.value) return orderList.value
+  const kw = orderSearchKey.value.toLowerCase()
+  return orderList.value.filter(o =>
+    (o.hotelName || '').toLowerCase().includes(kw) ||
+    (o.orderNo || '').toLowerCase().includes(kw) ||
+    (o.roomType || '').toLowerCase().includes(kw)
+  )
+})
 
 const stats = reactive({
   total: 0,
@@ -512,16 +533,20 @@ async function handlePay(order) {
   try {
     const res = await initiatePay(order.id)
     const data = res.data || res
-    // 检查是否有错误信息
     if (data && data.code && data.code !== 200) {
       ElMessage.error(data.msg || '发起支付失败')
       return
     }
     payingOrder.value = order
-    payQrCode.value = data.qrCodeUrl || 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=WECHAT_PAY_' + order.orderNo
     payDialogOpen.value = true
+    const qrData = 'WECHAT_PAY_' + (data.transactionId || order.orderNo)
+    try {
+      payQrCode.value = await QRCode.toDataURL(qrData, { width: 200, margin: 1 })
+    } catch (e) {
+      console.error('QR生成失败:', e)
+      ElMessage.warning('二维码生成失败，可直接点击确认支付')
+    }
   } catch (e) {
-    // 尝试解析错误信息
     const msg = e?.response?.data?.msg || e?.message || '发起支付失败，请重试'
     ElMessage.error(msg)
   }
@@ -720,6 +745,32 @@ onMounted(() => {
   color: #fff; font-weight: 600;
 }
 
+/* ==================== 搜索框 ==================== */
+.search-bar {
+  margin-bottom: 16px;
+  position: relative;
+  max-width: 360px;
+}
+.search-input {
+  width: 100%;
+  padding: 10px 36px 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: #3b82f6; }
+.search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #999;
+  font-size: 16px;
+}
+
 /* ==================== 订单列表 ==================== */
 .order-list-section { min-height: 300px; }
 
@@ -850,8 +901,12 @@ onMounted(() => {
 .pay-amount { font-size: 22px; font-weight: 700; color: #ff6b6b; }
 .pay-qrcode {
   margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.pay-qrcode img {
+.pay-qrcode img,
+.pay-qrcode canvas {
   width: 200px;
   height: 200px;
   border: 1px solid #eee;

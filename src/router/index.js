@@ -98,6 +98,12 @@ export const constantRoutes = [
         component: () => import('@/views/biz/merchant/index'),
         name: 'BizMerchantIndex',
         meta: { title: '商户中心', roles: ['merchant', 'ROLE_MERCHANT'] }
+      },
+      {
+        path: 'order',
+        component: () => import('@/views/biz/merchant/order'),
+        name: 'BizMerchantOrder',
+        meta: { title: '订单管理', roles: ['merchant', 'ROLE_MERCHANT'] }
       }
     ]
   },

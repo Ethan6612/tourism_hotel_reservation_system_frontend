@@ -361,11 +361,38 @@
         </div>
       </div>
     </footer>
+
+    <!-- 支付对话框 -->
+    <el-dialog title="微信支付" v-model="payDialogOpen" width="420px" destroy-on-close center>
+      <div class="pay-dialog-body">
+        <div class="pay-order-info">
+          <span class="pay-label">订单号</span>
+          <span class="pay-value">{{ payingOrder.orderNo }}</span>
+        </div>
+        <div class="pay-order-info">
+          <span class="pay-label">支付金额</span>
+          <span class="pay-amount">¥{{ payingOrder.totalPrice }}</span>
+        </div>
+        <div class="pay-qrcode">
+          <img :src="payQrCode" alt="微信支付二维码" />
+          <p>请使用微信扫一扫支付</p>
+        </div>
+        <div class="pay-tips">
+          <span>💡 演示环境，点击下方按钮模拟支付</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="payDialogOpen = false">取消支付</el-button>
+        <el-button type="success" @click="confirmPayInHotel" :loading="paying">
+          确认支付 ¥{{ payingOrder.totalPrice }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="HotelDetail">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
@@ -373,6 +400,8 @@ import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 import { getHotelDetail, getHotelRooms } from '@/api/front/hotel'
 import { listCommentByHotel, likeComment, getCommentLikes } from '@/api/biz/comment'
+import { initiatePay, confirmPay } from '@/api/front/userHome'
+import QRCode from 'qrcode'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -386,6 +415,47 @@ const currentImageIndex = ref(0)
 const likesOpen = ref(false)
 const likesList = ref([])
 const currentUserId = computed(() => userStore.id)
+
+// 支付状态
+const payDialogOpen = ref(false)
+const payingOrder = ref({})
+const payQrCode = ref('')
+const paying = ref(false)
+
+async function handlePayInHotel(order) {
+  try {
+    const res = await initiatePay(order.id)
+    const data = res.data || res
+    if (data && data.code && data.code !== 200) {
+      ElMessage.error(data.msg || '发起支付失败')
+      return
+    }
+    payingOrder.value = order
+    payQrCode.value = ''
+    payDialogOpen.value = true
+    const qrData = 'WECHAT_PAY_' + (data.transactionId || order.orderNo)
+    try {
+      payQrCode.value = await QRCode.toDataURL(qrData, { width: 200, margin: 1 })
+    } catch (e) {
+      console.error('QR生成失败:', e)
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '发起支付失败')
+  }
+}
+
+async function confirmPayInHotel() {
+  paying.value = true
+  try {
+    await confirmPay(payingOrder.value.id)
+    ElMessage.success('支付成功！')
+    payDialogOpen.value = false
+  } catch {
+    ElMessage.error('支付失败，请重试')
+  } finally {
+    paying.value = false
+  }
+}
 
 async function handleReviewLike(review) {
   try {
@@ -655,8 +725,8 @@ async function createOrderRequest(roomId, checkIn, checkOut) {
       { confirmButtonText: '去支付', cancelButtonText: '稍后支付', type: 'success',
         dangerouslyUseHTMLString: true }
     )
-    // 跳转到支付页面
-    router.push('/user/profile/orders')
+    // 当前页弹出支付对话框
+    handlePayInHotel(order)
   } catch (e) {
     if (e !== 'cancel' && e?.response?.data?.msg) {
       ElMessage.error(e.response.data.msg)
@@ -1895,4 +1965,15 @@ onMounted(() => {
     gap: 30px;
   }
 }
+
+/* 支付对话框 */
+.pay-dialog-body { text-align: center; }
+.pay-order-info { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.pay-label { font-size: 14px; color: #999; }
+.pay-value { font-size: 14px; color: #333; font-weight: 500; }
+.pay-amount { font-size: 22px; font-weight: 700; color: #ff6b6b; }
+.pay-qrcode { margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
+.pay-qrcode img, .pay-qrcode canvas { width: 200px; height: 200px; border: 1px solid #eee; border-radius: 8px; }
+.pay-qrcode p { margin-top: 8px; font-size: 13px; color: #666; }
+.pay-tips { padding: 10px 16px; background: #fef3c7; border-radius: 8px; font-size: 13px; color: #b45309; }
 </style>

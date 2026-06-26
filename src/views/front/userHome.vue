@@ -214,10 +214,14 @@
       <div class="container">
         <div class="section-header">
           <h2 class="section-title">最近订单</h2>
+          <div class="order-search-bar">
+            <input v-model="orderSearchKey" placeholder="搜索订单（酒店/订单号/房型）" class="order-search-input" />
+            <button class="order-search-clear" v-if="orderSearchKey" @click="orderSearchKey = ''">✕</button>
+          </div>
           <a href="#" class="view-all" @click.prevent="goToOrders">查看全部 →</a>
         </div>
-        <div v-if="recentOrders.length > 0" class="order-list">
-          <div v-for="order in recentOrders" :key="order.id" class="order-card">
+        <div v-if="filteredOrders.length > 0" class="order-list">
+          <div v-for="order in filteredOrders" :key="order.id" class="order-card">
             <div class="order-img">
               <img :src="order.hotelImage || defaultHotelImg" alt="酒店" />
             </div>
@@ -268,6 +272,10 @@
               >取消</button>
             </div>
           </div>
+        </div>
+        <div v-else-if="orderSearchKey && recentOrders.length > 0" class="empty-state">
+          <span class="empty-icon">🔍</span>
+          <p class="empty-text">未找到匹配的订单</p>
         </div>
         <div v-else class="empty-state">
           <span class="empty-icon">📋</span>
@@ -453,6 +461,33 @@
         <span>⬆</span>
       </div>
     </transition>
+
+    <!-- 支付对话框 -->
+    <el-dialog title="微信支付" v-model="payDialogOpen" width="420px" destroy-on-close center>
+      <div class="pay-dialog-body">
+        <div class="pay-order-info">
+          <span class="pay-label">订单号</span>
+          <span class="pay-value">{{ payingOrder.orderNo }}</span>
+        </div>
+        <div class="pay-order-info">
+          <span class="pay-label">支付金额</span>
+          <span class="pay-amount">¥{{ payingOrder.totalPrice }}</span>
+        </div>
+        <div class="pay-qrcode">
+          <img :src="payQrCode" alt="微信支付二维码" />
+          <p>请使用微信扫一扫支付</p>
+        </div>
+        <div class="pay-tips">
+          <span>💡 演示环境，点击下方按钮模拟支付</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="payDialogOpen = false">取消支付</el-button>
+        <el-button type="success" @click="confirmPayFromHome" :loading="paying">
+          确认支付 ¥{{ payingOrder.totalPrice }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -471,6 +506,7 @@ import {
 import { listMyComments } from '@/api/biz/comment'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
+import QRCode from 'qrcode'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -508,6 +544,20 @@ const dateShortcuts = [
 // 数据
 const stats = ref({ orderCount: 0, activeOrders: 0, reviewCount: 0, pendingReviews: 0, favoriteCount: 0, points: 0 })
 const recentOrders = ref([])
+const payDialogOpen = ref(false)
+const payingOrder = ref({})
+const payQrCode = ref('')
+const orderSearchKey = ref('')
+const filteredOrders = computed(() => {
+  if (!orderSearchKey.value) return recentOrders.value
+  const kw = orderSearchKey.value.toLowerCase()
+  return recentOrders.value.filter(o =>
+    (o.hotelName || '').toLowerCase().includes(kw) ||
+    (o.orderNo || '').toLowerCase().includes(kw) ||
+    (o.roomType || '').toLowerCase().includes(kw)
+  )
+})
+const paying = ref(false)
 const recentReviews = ref([])
 const hotCities = ref([])
 const activeHotelTab = ref('recommend')
@@ -667,18 +717,39 @@ async function handleCancelOrder(orderId) {
 
 async function handlePayOrder(order) {
   try {
-    await initiatePay(order.id)
-    await ElMessageBox.confirm(
-      `订单号：${order.orderNo}<br/>金额：¥${order.totalPrice}<br/><br/>确认支付？`,
-      '微信支付',
-      { confirmButtonText: '确认支付', cancelButtonText: '取消', type: 'info',
-        dangerouslyUseHTMLString: true }
-    )
-    await confirmPay(order.id)
+    const res = await initiatePay(order.id)
+    const data = res.data || res
+    if (data && data.code && data.code !== 200) {
+      ElMessage.error(data.msg || '发起支付失败')
+      return
+    }
+    payingOrder.value = order
+    payQrCode.value = ''
+    payDialogOpen.value = true
+    const qrData = 'WECHAT_PAY_' + (data.transactionId || order.orderNo)
+    try {
+      payQrCode.value = await QRCode.toDataURL(qrData, { width: 200, margin: 1 })
+    } catch (e) {
+      console.error('QR生成失败:', e)
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.msg || e?.message || '发起支付失败')
+  }
+}
+
+async function confirmPayFromHome() {
+  paying.value = true
+  try {
+    await confirmPay(payingOrder.value.id)
     ElMessage.success('支付成功！')
+    payDialogOpen.value = false
     loadRecentOrders()
     loadStats()
-  } catch { /* 用户取消或失败 */ }
+  } catch {
+    ElMessage.error('支付失败，请重试')
+  } finally {
+    paying.value = false
+  }
 }
 
 // ==================== 数据加载 ====================
@@ -1291,6 +1362,34 @@ onUnmounted(() => {
   margin-bottom: 0;
 }
 
+.order-search-bar {
+  flex: 1;
+  max-width: 280px;
+  margin: 0 20px;
+  position: relative;
+}
+.order-search-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.order-search-input:focus { border-color: #3b82f6; }
+.order-search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  font-size: 14px;
+}
+
 .section-tabs {
   display: flex;
   gap: 16px;
@@ -1757,4 +1856,15 @@ onUnmounted(() => {
   .nav { display: none; }
   .section-header { flex-direction: column; gap: 12px; align-items: flex-start; }
 }
+
+/* 支付对话框 */
+.pay-dialog-body { text-align: center; }
+.pay-order-info { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.pay-label { font-size: 14px; color: #999; }
+.pay-value { font-size: 14px; color: #333; font-weight: 500; }
+.pay-amount { font-size: 22px; font-weight: 700; color: #ff6b6b; }
+.pay-qrcode { margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
+.pay-qrcode img, .pay-qrcode canvas { width: 200px; height: 200px; border: 1px solid #eee; border-radius: 8px; }
+.pay-qrcode p { margin-top: 8px; font-size: 13px; color: #666; }
+.pay-tips { padding: 10px 16px; background: #fef3c7; border-radius: 8px; font-size: 13px; color: #b45309; }
 </style>

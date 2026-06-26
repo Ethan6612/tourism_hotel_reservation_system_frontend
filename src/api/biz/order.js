@@ -85,3 +85,30 @@ export function batchDelOrder(ids) {
     data: ids
   })
 }
+
+// 办理入住
+export function checkinOrder(id, remark) {
+  return request({
+    url: '/api/order/' + id + '/checkin',
+    method: 'put',
+    params: { remark }
+  })
+}
+
+// 办理退房
+export function checkoutOrder(id, remark) {
+  return request({
+    url: '/api/order/' + id + '/checkout',
+    method: 'put',
+    params: { remark }
+  })
+}
+
+// 修改备注
+export function updateOrderRemark(id, remark) {
+  return request({
+    url: '/api/order/' + id + '/remark',
+    method: 'put',
+    params: { remark }
+  })
+}
