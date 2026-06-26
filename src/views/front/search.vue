@@ -398,7 +398,7 @@ const scoreOptions = [
 
 // 设施选项
 const facilityOptions = [
-  '免费WiFi',
+  'WiFi',
   '停车场',
   '游泳池',
   '健身房',
