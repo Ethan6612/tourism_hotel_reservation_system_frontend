@@ -118,8 +118,16 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="图片URL" prop="imgUrl">
-              <el-input v-model="form.imgUrl" placeholder="请输入房型图片URL" />
+            <el-form-item label="房型图片" prop="imgUrl">
+              <ImageUpload
+                ref="imageUploadRef"
+                v-model="form.imgUrl"
+                action="/common/upload/oss"
+                :limit="1"
+                :file-size="2"
+                :file-type="['png', 'jpg', 'jpeg']"
+                :auto-upload="false"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -166,6 +174,7 @@
 
 <script setup name="BizRoom">
 import { listRoom, getRoom, addRoom, updateRoom, delRoom, updateRoomStatus, updateRoomPrice, updateRoomStock, getLowStockRooms, getRoomsByHotelId } from '@/api/biz/room'
+import { listHotel } from '@/api/biz/hotel'
 import { useRouter, useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
@@ -182,7 +191,7 @@ const stockOpen = ref(false)
 const title = ref('')
 
 const hotelId = ref(route.query.hotelId ? Number(route.query.hotelId) : undefined)
-const hotelName = ref(route.query.hotelName || '全部酒店')
+const hotelName = ref(route.query.hotelName || '')
 
 const queryParams = ref({
   pageNum: 1,
@@ -191,6 +200,8 @@ const queryParams = ref({
   status: undefined,
   hotelId: hotelId.value
 })
+
+const imageUploadRef = ref(null)
 
 const form = ref({
   id: undefined,
@@ -215,6 +226,23 @@ const rules = {
 
 function goBack() {
   router.push('/biz/hotel')
+}
+
+/** 如果路由未传hotelId，自动查询商户的酒店 */
+async function autoDetectHotel() {
+  if (hotelId.value) return // 已有hotelId，无需自动检测
+  try {
+    const res = await listHotel({ pageNum: 1, pageSize: 1 })
+    const hotels = res.data?.list || res.data?.rows || res.rows || []
+    if (hotels.length > 0) {
+      hotelId.value = hotels[0].id
+      hotelName.value = hotels[0].name || ''
+      queryParams.value.hotelId = hotelId.value
+      form.value.hotelId = hotelId.value
+    }
+  } catch {
+    // 静默失败
+  }
 }
 
 function reset() {
@@ -295,24 +323,28 @@ function handleUpdate(row) {
   })
 }
 
-function submitForm() {
-  proxy.$refs['roomRef'].validate(valid => {
-    if (valid) {
-      if (form.value.id != undefined) {
-        updateRoom(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功')
-          open.value = false
-          getList()
-        })
-      } else {
-        addRoom(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功')
-          open.value = false
-          getList()
-        })
-      }
+async function submitForm() {
+  try {
+    await proxy.$refs['roomRef'].validate()
+  } catch {
+    return
+  }
+  // 先上传图片到OSS
+  if (imageUploadRef.value) {
+    const imgUrl = await imageUploadRef.value.submitUpload()
+    if (imgUrl !== null) {
+      form.value.imgUrl = imgUrl
     }
-  })
+  }
+  if (form.value.id != undefined) {
+    await updateRoom(form.value)
+    proxy.$modal.msgSuccess('修改成功')
+  } else {
+    await addRoom(form.value)
+    proxy.$modal.msgSuccess('新增成功')
+  }
+  open.value = false
+  getList()
 }
 
 function handlePrice(row) {
@@ -386,7 +418,7 @@ function showLowStock() {
   })
 }
 
-getList()
+autoDetectHotel().then(() => getList())
 </script>
 
 <style scoped lang="scss">
