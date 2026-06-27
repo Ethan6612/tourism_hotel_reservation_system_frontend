@@ -214,14 +214,10 @@
       <div class="container">
         <div class="section-header">
           <h2 class="section-title">最近订单</h2>
-          <div class="order-search-bar">
-            <input v-model="orderSearchKey" placeholder="搜索订单（酒店/订单号/房型）" class="order-search-input" />
-            <button class="order-search-clear" v-if="orderSearchKey" @click="orderSearchKey = ''">✕</button>
-          </div>
           <a href="#" class="view-all" @click.prevent="goToOrders">查看全部 →</a>
         </div>
-        <div v-if="filteredOrders.length > 0" class="order-list">
-          <div v-for="order in filteredOrders" :key="order.id" class="order-card">
+        <div v-if="recentOrders.length > 0" class="order-list">
+          <div v-for="order in recentOrders" :key="order.id" class="order-card">
             <div class="order-img">
               <img :src="order.hotelImage || defaultHotelImg" alt="酒店" />
             </div>
@@ -272,10 +268,6 @@
               >取消</button>
             </div>
           </div>
-        </div>
-        <div v-else-if="orderSearchKey && recentOrders.length > 0" class="empty-state">
-          <span class="empty-icon">🔍</span>
-          <p class="empty-text">未找到匹配的订单</p>
         </div>
         <div v-else class="empty-state">
           <span class="empty-icon">📋</span>
@@ -547,16 +539,6 @@ const recentOrders = ref([])
 const payDialogOpen = ref(false)
 const payingOrder = ref({})
 const payQrCode = ref('')
-const orderSearchKey = ref('')
-const filteredOrders = computed(() => {
-  if (!orderSearchKey.value) return recentOrders.value
-  const kw = orderSearchKey.value.toLowerCase()
-  return recentOrders.value.filter(o =>
-    (o.hotelName || '').toLowerCase().includes(kw) ||
-    (o.orderNo || '').toLowerCase().includes(kw) ||
-    (o.roomType || '').toLowerCase().includes(kw)
-  )
-})
 const paying = ref(false)
 const recentReviews = ref([])
 const hotCities = ref([])
@@ -1360,34 +1342,6 @@ onUnmounted(() => {
 
 .section-header .section-title {
   margin-bottom: 0;
-}
-
-.order-search-bar {
-  flex: 1;
-  max-width: 280px;
-  margin: 0 20px;
-  position: relative;
-}
-.order-search-input {
-  width: 100%;
-  padding: 8px 32px 8px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.order-search-input:focus { border-color: #3b82f6; }
-.order-search-clear {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #999;
-  font-size: 14px;
 }
 
 .section-tabs {
