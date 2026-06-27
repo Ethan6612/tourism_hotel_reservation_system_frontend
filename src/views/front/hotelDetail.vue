@@ -8,7 +8,7 @@
           <span class="logo-text">ZSC酒店预订</span>
         </div>
         <nav class="nav">
-          <a href="/index" class="nav-item">首页</a>
+          <a :href="isLoggedIn ? '/home' : '/index'" class="nav-item">首页</a>
           <a href="/search" class="nav-item active">酒店</a>
           <a href="#" class="nav-item">攻略</a>
           <a href="#" class="nav-item">关于我们</a>
@@ -42,7 +42,7 @@
     <div class="breadcrumb-section">
       <div class="container">
         <el-breadcrumb separator="/">
-          <el-breadcrumb-item><a href="/index">首页</a></el-breadcrumb-item>
+          <el-breadcrumb-item><a :href="isLoggedIn ? '/home' : '/index'">首页</a></el-breadcrumb-item>
           <el-breadcrumb-item><a href="/search">酒店搜索</a></el-breadcrumb-item>
           <el-breadcrumb-item>{{ hotel.hotelName }}</el-breadcrumb-item>
         </el-breadcrumb>
@@ -781,7 +781,7 @@ async function loadRooms() {
 
 // 跳转到首页
 function goToHome() {
-  router.push('/index')
+  router.push(isLoggedIn.value ? '/home' : '/index')
 }
 
 // 跳转到登录
