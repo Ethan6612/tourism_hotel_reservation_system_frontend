@@ -240,7 +240,7 @@ const recentOrders = ref([])
 const merchantRankList = ref([])
 const hotelRankList = ref([])
 
-function goToOrders() { router.push('/biz/order') }
+function goToOrders() { router.push('/today-orders') }
 function formatAmount(val) {
   if (val == null || val === 0) return '0'
   const num = Number(val)
@@ -365,9 +365,9 @@ function initMerchantRoomChart(data) {
   const chart = echarts.init(merchantChartRef.value)
   chart.setOption({
     tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
-    legend: { orient: 'vertical', left: 'left', top: 'middle' },
+    legend: { type: 'scroll', orient: 'horizontal', left: 'center', bottom: 0 },
     series: [{
-      name: '房型分布', type: 'pie', radius: '60%', center: ['60%', '50%'],
+      name: '房型分布', type: 'pie', radius: ['40%', '60%'], center: ['50%', '45%'],
       data: data.length > 0 ? data : [{ value: 0, name: '暂无数据' }],
       emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
     }]

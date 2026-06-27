@@ -8,7 +8,7 @@
     <!-- 数据概览卡片 -->
     <el-row :gutter="20" class="stats-row">
       <el-col :xs="12" :sm="8" :md="4">
-        <div class="stat-card hotel-card" @click="goToPage('/biz/hotel')">
+        <div class="stat-card hotel-card">
           <div class="stat-icon">🏨</div>
           <div class="stat-info">
             <div class="stat-value">{{ dashboard.hotelCount }}</div>
@@ -17,7 +17,7 @@
         </div>
       </el-col>
       <el-col :xs="12" :sm="8" :md="4">
-        <div class="stat-card room-card" @click="goToPage('/biz/room')">
+        <div class="stat-card room-card">
           <div class="stat-icon">🚪</div>
           <div class="stat-info">
             <div class="stat-value">{{ dashboard.roomCount }}</div>
@@ -26,7 +26,7 @@
         </div>
       </el-col>
       <el-col :xs="12" :sm="8" :md="4">
-        <div class="stat-card order-card" @click="goToPage('/biz/hotel')">
+        <div class="stat-card order-card">
           <div class="stat-icon">📋</div>
           <div class="stat-info">
             <div class="stat-value">{{ dashboard.orderCount }}</div>
@@ -66,7 +66,7 @@
     <!-- 今日概览 + 待处理 -->
     <el-row :gutter="20" class="stats-row">
       <el-col :xs="12" :sm="6">
-        <div class="stat-card today-card">
+        <div class="stat-card today-card" @click="goToPage('/today-orders')" style="cursor:pointer">
           <div class="stat-icon">🕐</div>
           <div class="stat-info">
             <div class="stat-value">{{ dashboard.todayOrderCount }}</div>
@@ -164,12 +164,12 @@
 
 <script setup name="BizStatistics">
 import { ref, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+
 import * as echarts from 'echarts'
 import { getMerchantDashboard } from '@/api/biz/statistics'
 import { getMerchantCommentStatistics } from '@/api/biz/comment'
 
-const router = useRouter()
+
 const { proxy } = getCurrentInstance()
 
 const statsLoading = ref(false)
@@ -197,9 +197,6 @@ function formatAmount(val) {
   return num.toLocaleString()
 }
 
-function goToPage(path) {
-  router.push(path)
-}
 
 async function loadDashboard() {
   try {

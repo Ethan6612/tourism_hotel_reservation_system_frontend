@@ -129,8 +129,10 @@ import { listMerchantOrder, getMerchantOrder, checkinOrder, checkoutOrder, cance
 import { listHotel } from '@/api/biz/hotel'
 import { refundOrder } from '@/api/biz/order'
 import { getCurrentInstance, ref, reactive, toRefs, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
+const route = useRoute()
 
 const orderList = ref([])
 const loading = ref(true)
@@ -170,7 +172,7 @@ function getList() {
   loading.value = true
   if (dateRange.value && dateRange.value.length === 2) {
     queryParams.value.beginTime = dateRange.value[0]
-    queryParams.value.endTime = dateRange.value[1]
+    queryParams.value.endTime = dateRange.value[1] + ' 23:59:59'
   } else {
     queryParams.value.beginTime = null
     queryParams.value.endTime = null
@@ -294,6 +296,11 @@ function getStatusType(status) {
 }
 
 onMounted(() => {
+  // 从仪表盘"今日订单"跳转过来时，自动筛选今日
+  if (route.query.today === '1') {
+    const today = new Date().toISOString().split('T')[0]
+    dateRange.value = [today, today]
+  }
   loadMyHotels().then(() => {
     getList()
   })

@@ -228,7 +228,7 @@
     </section>
 
     <!-- 房型列表 -->
-    <section class="room-section">
+    <section class="room-section" id="room-section">
       <div class="container">
         <h2 class="section-title">房型与价格</h2>
         <div class="room-list">
@@ -672,22 +672,8 @@ function nextImage() {
 }
 
 // 预订（使用右侧预订卡片，默认第一个房型）
-async function handleBook() {
-  if (!isLoggedIn.value) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
-  }
-  if (!booking.value.checkIn || !booking.value.checkOut) {
-    ElMessage.warning('请选择入住和退房日期')
-    return
-  }
-  if (rooms.value.length === 0) {
-    ElMessage.warning('暂无可用房型')
-    return
-  }
-  // 默认选第一个房型
-  await createOrderRequest(rooms.value[0].id, booking.value.checkIn, booking.value.checkOut)
+function handleBook() {
+  document.getElementById('room-section')?.scrollIntoView({ behavior: 'smooth' })
 }
 
 // 预订指定房型
