@@ -79,7 +79,7 @@
           <el-button link type="primary" icon="View" @click.stop="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click.stop="handleUpdate(scope.row)">编辑</el-button>
           <el-button link type="success" icon="OfficeBuilding" @click.stop="handleRoomManage(scope.row)">房型</el-button>
-          <el-button v-if="scope.row.status === '0' || scope.row.status === '3'" link type="primary" icon="Upload" @click.stop="handleSubmitAudit(scope.row)">上架</el-button>
+          <el-button v-if="scope.row.status === '1' || scope.row.status === '3'" link type="primary" icon="Upload" @click.stop="handleSubmitAudit(scope.row)">上架</el-button>
           <el-button v-if="scope.row.status === '0'" link type="warning" icon="VideoPause" @click.stop="handleStatusChange(scope.row, '3')">下架</el-button>
           <el-button link type="danger" icon="Delete" @click.stop="handleDelete(scope.row)">删除</el-button>
         </template>
