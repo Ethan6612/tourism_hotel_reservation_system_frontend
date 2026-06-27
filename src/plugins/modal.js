@@ -20,20 +20,20 @@ export default {
     ElMessage.warning(content)
   },
   // 弹出提示
-  alert(content) {
-    ElMessageBox.alert(content, "系统提示")
+  alert(content, title, options) {
+    ElMessageBox.alert(content, title || "系统提示", options || {})
   },
   // 错误提示
-  alertError(content) {
-    ElMessageBox.alert(content, "系统提示", { type: 'error' })
+  alertError(content, title, options) {
+    ElMessageBox.alert(content, title || "系统提示", { type: 'error', ...options })
   },
   // 成功提示
-  alertSuccess(content) {
-    ElMessageBox.alert(content, "系统提示", { type: 'success' })
+  alertSuccess(content, title, options) {
+    ElMessageBox.alert(content, title || "系统提示", { type: 'success', ...options })
   },
   // 警告提示
-  alertWarning(content) {
-    ElMessageBox.alert(content, "系统提示", { type: 'warning' })
+  alertWarning(content, title, options) {
+    ElMessageBox.alert(content, title || "系统提示", { type: 'warning', ...options })
   },
   // 通知提示
   notify(content) {
