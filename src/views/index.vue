@@ -240,7 +240,7 @@ const recentOrders = ref([])
 const merchantRankList = ref([])
 const hotelRankList = ref([])
 
-function goToOrders() { router.push('/biz/order') }
+function goToOrders() { router.push('/today-orders') }
 function formatAmount(val) {
   if (val == null || val === 0) return '0'
   const num = Number(val)
