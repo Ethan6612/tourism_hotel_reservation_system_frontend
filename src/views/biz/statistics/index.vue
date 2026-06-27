@@ -66,7 +66,7 @@
     <!-- 今日概览 + 待处理 -->
     <el-row :gutter="20" class="stats-row">
       <el-col :xs="12" :sm="6">
-        <div class="stat-card today-card">
+        <div class="stat-card today-card" @click="goToPage('/today-orders')" style="cursor:pointer">
           <div class="stat-icon">🕐</div>
           <div class="stat-info">
             <div class="stat-value">{{ dashboard.todayOrderCount }}</div>

@@ -87,6 +87,17 @@ export const constantRoutes = [
     meta: { title: '审核等待中' }
   },
   {
+    path: '/today-orders',
+    component: Layout,
+    hidden: true,
+    children: [{
+      path: '',
+      component: () => import('@/views/biz/order/today'),
+      name: 'TodayOrders',
+      meta: { title: '今日订单' }
+    }]
+  },
+  {
     path: '/biz/merchant',
     component: Layout,
     hidden: true,
