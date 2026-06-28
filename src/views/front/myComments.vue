@@ -50,7 +50,7 @@
               </div>
               <div class="card-status">
                 <el-tag v-if="item.status === '0'" type="warning" size="small">待审核</el-tag>
-                <el-tag v-else-if="item.status === '2'" type="danger" size="small">审核未通过</el-tag>
+                <el-tag v-else-if="item.status === '2'" type="danger" size="small">已下架</el-tag>
                 <el-tag v-else type="success" size="small">已发布</el-tag>
               </div>
             </div>

@@ -110,11 +110,11 @@
           <div v-if="completedOrders.length > 0" class="points-summary">
             <div class="summary-card">
               <span class="summary-label">累计完成订单</span>
-              <span class="summary-value">{{ completedOrders.length }} 笔</span>
+              <span class="summary-value">{{ totalCompletedOrders }} 笔</span>
             </div>
             <div class="summary-card">
               <span class="summary-label">累计消费金额</span>
-              <span class="summary-value">¥{{ totalSpent.toLocaleString() }}</span>
+              <span class="summary-value">¥{{ totalCompletedAmount.toLocaleString() }}</span>
             </div>
             <div class="summary-card highlight">
               <span class="summary-label">累计获得积分</span>
@@ -158,13 +158,15 @@ const isMerchant = computed(() => userStore.roles?.some(r => r === 'merchant' ||
 
 const loading = ref(false)
 const userPoints = ref(0)
+const allCompletedOrders = ref([])
 const completedOrders = ref([])
 const pageNum = ref(1)
 const pageSize = ref(5)
 const total = ref(0)
 
-const totalSpent = computed(() => {
-  return completedOrders.value.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0)
+const totalCompletedOrders = computed(() => allCompletedOrders.value.length)
+const totalCompletedAmount = computed(() => {
+  return allCompletedOrders.value.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0)
 })
 
 function formatDate(date) {
@@ -214,13 +216,18 @@ async function loadPoints() {
 async function loadCompletedOrders() {
   loading.value = true
   try {
-    // 只查询已完成的订单（status=3）
-    const res = await listMyOrders({ pageNum: pageNum.value, pageSize: pageSize.value, status: '3' })
+    // 一次性获取所有已完成订单，用于汇总统计和前端分页
+    const res = await listMyOrders({ pageNum: 1, pageSize: 9999, status: '3' })
     const data = res.data || res
-    const list = data.rows || res.rows || []
-    completedOrders.value = list
-    total.value = data.total || res.total || list.length
+    allCompletedOrders.value = data.rows || res.rows || []
+    total.value = allCompletedOrders.value.length
+
+    // 前端分页展示
+    const start = (pageNum.value - 1) * pageSize.value
+    const end = start + pageSize.value
+    completedOrders.value = allCompletedOrders.value.slice(start, end)
   } catch {
+    allCompletedOrders.value = []
     completedOrders.value = []
     total.value = 0
   } finally {

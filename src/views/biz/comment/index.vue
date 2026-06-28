@@ -42,12 +42,13 @@
               <div class="card-body">
                 <div class="card-header">
                   <div class="user-info">
-                    <span class="user-name">{{ item.isAnonymous === '1' ? '匿名用户' : (item.userName || '用户') }}</span>
+                    <span class="user-name">{{ item.userName || '用户' }}</span>
                     <el-rate :model-value="item.score" disabled size="small" text-color="#ff9900" />
                     <span class="comment-time">{{ item.createTime }}</span>
                   </div>
                   <div class="card-tags">
                     <el-tag v-if="item.status === '0'" type="warning" size="small">待审核</el-tag>
+                    <el-tag v-else-if="item.status === '2'" type="danger" size="small">已下架</el-tag>
                     <el-tag v-else type="success" size="small">已发布</el-tag>
                   </div>
                 </div>

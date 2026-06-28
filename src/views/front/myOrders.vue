@@ -387,7 +387,16 @@ function goToRegister() { router.push('/login?tab=register') }
 function goToHotelList() { router.push('/search') }
 function goToPoints() { router.push('/user/profile/points') }
 function goToWriteReview(order) {
-  router.push({ path: '/user/comment/write', query: { orderId: order.id, hotelId: order.hotelId } })
+  router.push({ path: '/user/comment/write', query: {
+    orderId: order.id,
+    hotelId: order.hotelId,
+    hotelName: order.hotelName || undefined,
+    hotelImage: order.hotelImage || undefined,
+    roomType: order.roomType || undefined,
+    roomId: order.roomId || undefined,
+    checkInDate: order.startDate || undefined,
+    checkOutDate: order.endDate || undefined
+  }})
 }
 
 function handleUserCommand(command) {

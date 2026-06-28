@@ -266,7 +266,7 @@
         <div class="review-summary">
           <div class="summary-score">
             <span class="big-score">{{ hotel.score }}</span>
-            <span class="score-label">超棒</span>
+            <span class="score-label">{{ getScoreLabel(hotel.score) }}</span>
           </div>
           <div class="summary-bars">
             <div v-for="item in ratingDistribution" :key="item.label" class="bar-item">
@@ -286,6 +286,7 @@
                 <div class="reviewer-details">
                   <span class="reviewer-name">{{ review.userName }}</span>
                   <span class="review-time">{{ review.time }}</span>
+                  <span class="review-hotel-tag">{{ hotel.name }}</span>
                 </div>
               </div>
               <div class="review-score">
@@ -614,7 +615,7 @@ async function loadReviews() {
     const res = await listCommentByHotel(hotelId, { pageNum: 1, pageSize: 50, status: '1' })
     const list = (res.data?.rows || res.data?.list || res.rows || []).map(r => ({
       id: r.id, userId: r.userId,
-      userName: r.isAnonymous === '1' ? '匿名用户' : (r.userName || '匿名用户'),
+      userName: r.userName || '用户',
       score: r.score,
       time: r.createTime ? r.createTime.substring(0, 10) : '',
       content: r.content,
@@ -631,9 +632,19 @@ async function loadReviews() {
     if (list.length > 0) {
       const avg = (list.reduce((s, r) => s + r.score, 0) / list.length).toFixed(1)
       hotel.value.score = avg
+      hotel.value.scoreLabel = getScoreLabel(avg);
       hotel.value.reviewCount = list.length
     }
   } catch { /* 评价加载失败 */ }
+}
+
+function getScoreLabel(score) {
+  const n = Number(score);
+  if (n >= 4.5) return '超棒';
+  if (n >= 4.0) return '很棒';
+  if (n >= 3.0) return '一般';
+  if (n >= 2.0) return '较差';
+  return '很差';
 }
 
 // 当前显示的图片
@@ -1780,6 +1791,17 @@ onMounted(() => {
 .review-time {
   font-size: 13px;
   color: #999;
+}
+
+.review-hotel-tag {
+  font-size: 11px;
+  color: #409eff;
+  background: #e8f0fe;
+  padding: 1px 8px;
+  border-radius: 8px;
+  margin-left: 6px;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .review-score .score {

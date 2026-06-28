@@ -34,7 +34,7 @@
               <div class="card-body">
                 <div class="card-header">
                   <div class="user-info">
-                    <span class="user-name">{{ item.isAnonymous === '1' ? '匿名用户' : (item.userName || '用户') }}</span>
+                    <span class="user-name">{{ item.userName || '用户' }}</span>
                     <el-rate :model-value="item.score" disabled size="small" text-color="#ff9900" />
                     <span class="comment-time">{{ item.createTime }}</span>
                   </div>

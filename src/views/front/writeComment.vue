@@ -97,12 +97,6 @@
           </div>
         </div>
 
-        <!-- 匿名评价（写/修改模式显示） -->
-        <div class="form-section" v-if="mode !== 'append'">
-          <label class="form-label">匿名评价</label>
-          <el-switch v-model="form.isAnonymous" active-text="匿名" inactive-text="公开" />
-        </div>
-
         <!-- 提交 -->
         <div class="form-actions">
           <el-button @click="goBack">取消</el-button>
@@ -139,8 +133,7 @@ const defaultImg = 'https://images.unsplash.com/photo-1566073771259-6a8506099945
 const form = ref({
   score: 5,
   content: '',
-  images: [],
-  isAnonymous: false
+  images: []
 })
 
 const submitting = ref(false)
@@ -222,7 +215,7 @@ async function handleSubmit() {
         score: form.value.score,
         content: form.value.content,
         images: JSON.stringify(form.value.images),
-        isAnonymous: form.value.isAnonymous ? '1' : '0'
+        isAnonymous: '0'
       }
       await submitComment(data)
       ElMessage.success('评价发布成功！')
@@ -233,7 +226,7 @@ async function handleSubmit() {
         score: form.value.score,
         content: form.value.content,
         images: JSON.stringify(form.value.images),
-        isAnonymous: form.value.isAnonymous ? '1' : '0'
+        isAnonymous: '0'
       }
       await updateMyComment(data)
       ElMessage.success('评价修改成功')
@@ -259,16 +252,21 @@ onMounted(async () => {
     checkInDate: route.query.checkInDate || '',
     checkOutDate: route.query.checkOutDate || ''
   }
-  // 如果 hotelId 缺失，从订单详情获取
-  if (!orderInfo.value.hotelId && route.query.orderId) {
+
+  // 如果日期或酒店ID缺失，从订单详情获取
+  if (route.query.orderId && (!orderInfo.value.checkInDate || !orderInfo.value.hotelId)) {
     try {
       const res = await getOrderDetail(route.query.orderId)
       const data = res.data || res
-      orderInfo.value.hotelId = data.hotelId || data.hotel_id
+      orderInfo.value.hotelId = data.hotelId || data.hotel_id || orderInfo.value.hotelId
       orderInfo.value.hotelName = data.hotelName || data.hotel_name || orderInfo.value.hotelName
       orderInfo.value.roomType = data.roomType || data.room_type || orderInfo.value.roomType
+      orderInfo.value.hotelImage = data.hotelImage || data.imgUrl || orderInfo.value.hotelImage
+      if (!orderInfo.value.checkInDate) orderInfo.value.checkInDate = data.startDate || ''
+      if (!orderInfo.value.checkOutDate) orderInfo.value.checkOutDate = data.endDate || ''
     } catch { /* 忽略 */ }
   }
+
   // 编辑/追加模式：加载已有评价
   if (mode.value === 'edit' || mode.value === 'append') {
     try {
@@ -283,14 +281,22 @@ onMounted(async () => {
         hotelName: data.hotelName || '',
         hotelImage: data.hotelImage || '',
         roomType: data.roomType || '',
-        checkInDate: data.checkInDate || '',
-        checkOutDate: data.checkOutDate || ''
+        checkInDate: orderInfo.value.checkInDate || '',
+        checkOutDate: orderInfo.value.checkOutDate || ''
+      }
+      // 编辑/追加模式也尝试加载订单详情获取日期
+      if (data.orderId && (!orderInfo.value.checkInDate || !orderInfo.value.checkOutDate)) {
+        try {
+          const orderRes = await getOrderDetail(data.orderId)
+          const orderData = orderRes.data || orderRes
+          orderInfo.value.checkInDate = orderData.startDate || orderInfo.value.checkInDate
+          orderInfo.value.checkOutDate = orderData.endDate || orderInfo.value.checkOutDate
+        } catch { /* 忽略 */ }
       }
       if (mode.value === 'edit') {
         form.value.score = data.score
         form.value.content = data.content
         form.value.images = parseImages(data.images)
-        form.value.isAnonymous = data.isAnonymous === '1'
       }
     } catch {
       ElMessage.error('加载评价信息失败')

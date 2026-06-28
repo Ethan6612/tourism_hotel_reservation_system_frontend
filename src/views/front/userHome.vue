@@ -185,16 +185,6 @@
             </div>
             <span class="stat-arrow">→</span>
           </div>
-          <div class="stat-card" @click="goToFavorites">
-            <div class="stat-icon-box" style="background: #fef2f2;">
-              <span>❤️</span>
-            </div>
-            <div class="stat-body">
-              <span class="stat-number">{{ stats.favoriteCount }}</span>
-              <span class="stat-label">我的收藏</span>
-            </div>
-            <span class="stat-arrow">→</span>
-          </div>
           <div class="stat-card" @click="goToPoints">
             <div class="stat-icon-box" style="background: #f0fdf4;">
               <span>🎁</span>
@@ -495,7 +485,7 @@ import {
   getUserDashboardStats, getPersonalRecommend,
   initiatePay, confirmPay
 } from '@/api/front/userHome'
-import { listMyComments } from '@/api/biz/comment'
+import { listMyComments, myCommentStatistics } from '@/api/biz/comment'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 import QRCode from 'qrcode'
@@ -534,7 +524,7 @@ const dateShortcuts = [
 ]
 
 // 数据
-const stats = ref({ orderCount: 0, activeOrders: 0, reviewCount: 0, pendingReviews: 0, favoriteCount: 0, points: 0 })
+const stats = ref({ orderCount: 0, activeOrders: 0, reviewCount: 0, pendingReviews: 0, points: 0 })
 const recentOrders = ref([])
 const payDialogOpen = ref(false)
 const payingOrder = ref({})
@@ -677,8 +667,8 @@ function goToWriteReview(order) {
     hotelImage: order.hotelImage || undefined,
     roomType: order.roomType || undefined,
     roomId: order.roomId || undefined,
-    checkInDate: order.checkInDate || undefined,
-    checkOutDate: order.checkOutDate || undefined
+    checkInDate: order.startDate || undefined,
+    checkOutDate: order.endDate || undefined
   }})
 }
 function goToReviews() { router.push('/user/myComments') }
@@ -741,8 +731,6 @@ async function loadStats() {
   if (!isLoggedIn.value) return
   try {
     const res = await getUserDashboardStats()
-    // axios拦截器已解包: res = { code, data, msg }
-    // data在 res.data 中（RuoYi AjaxResult格式）
     const body = res.data || res
     if (body) {
       stats.value = {
@@ -750,13 +738,17 @@ async function loadStats() {
         activeOrders: body.activeOrders ?? stats.value.activeOrders,
         reviewCount: body.reviewCount ?? stats.value.reviewCount,
         pendingReviews: body.pendingReviews ?? stats.value.pendingReviews,
-        favoriteCount: body.favoriteCount ?? stats.value.favoriteCount,
         points: body.points ?? stats.value.points
       }
     }
+    // 获取真实的评价数
+    try {
+      const commentStatsRes = await myCommentStatistics()
+      const cs = commentStatsRes.data || commentStatsRes
+      stats.value.reviewCount = cs.total ?? stats.value.reviewCount
+    } catch { /* 忽略 */ }
   } catch (e) {
     console.warn('获取首页统计失败，使用订单列表推算', e)
-    // 降级：从订单列表推算
     try {
       const res = await listMyOrders({ pageNum: 1, pageSize: 100 })
       const list = res.data?.rows || res.rows || []
@@ -1263,7 +1255,7 @@ onUnmounted(() => {
 
 .stats-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
@@ -1797,7 +1789,7 @@ onUnmounted(() => {
 
 /* ==================== 响应式 ==================== */
 @media (max-width: 1024px) {
-  .stats-cards { grid-template-columns: repeat(2, 1fr); }
+  .stats-cards { grid-template-columns: repeat(3, 1fr); }
   .city-list { grid-template-columns: repeat(3, 1fr); }
   .service-list { gap: 60px; }
 }
