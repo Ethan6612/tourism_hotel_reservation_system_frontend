@@ -16,9 +16,8 @@
       </el-form-item>
       <el-form-item label="支付方式" prop="payType">
         <el-select v-model="queryParams.payType" placeholder="请选择方式" clearable>
-          <el-option label="微信" value="1" />
-          <el-option label="支付宝" value="2" />
-          <el-option label="银行卡" value="3" />
+          <el-option label="微信支付" value="1" />
+          <el-option label="其它" value="2" />
         </el-select>
       </el-form-item>
       <el-form-item label="时间范围">
@@ -54,7 +53,7 @@
       </el-table-column>
       <el-table-column label="支付方式" align="center" width="100">
         <template #default="scope">
-          <el-tag :type="scope.row.payType === '1' ? 'success' : scope.row.payType === '2' ? 'primary' : 'warning'">
+          <el-tag :type="scope.row.payType === '1' ? 'success' : 'info'">
             {{ scope.row.payTypeName }}
           </el-tag>
         </template>

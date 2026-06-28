@@ -231,11 +231,9 @@
                 <span class="price-symbol">¥</span>
                 <span class="price-value">{{ order.totalPrice }}</span>
               </div>
-              <button
-                v-if="order.status === '1'"
-                class="order-btn primary"
-                @click="goToOrderDetail(order.id)"
-              >查看详情</button>
+              <button class="order-btn detail" @click="order.expanded = !order.expanded">
+                {{ order.expanded ? '收起' : '详情' }}
+              </button>
               <button
                 v-if="order.status === '3' && !order.reviewed"
                 class="order-btn review"
@@ -256,6 +254,18 @@
                 class="order-btn cancel"
                 @click="handleCancelOrder(order.id)"
               >取消</button>
+            </div>
+            <!-- 订单详情（展开） -->
+            <div v-if="order.expanded" class="order-expand-detail">
+              <div class="expand-row"><span>订单号：</span>{{ order.orderNo }}</div>
+              <div class="expand-row"><span>酒店：</span>{{ order.hotelName }}</div>
+              <div class="expand-row"><span>房型：</span>{{ order.roomType || '-' }}</div>
+              <div class="expand-row"><span>入住：</span>{{ formatOrderDate(order.startDate) }} → {{ formatOrderDate(order.endDate) }}（{{ calcOrderNights(order) }}晚）</div>
+              <div class="expand-row"><span>金额：</span>¥{{ order.totalPrice }}</div>
+              <div class="expand-row"><span>支付方式：</span>{{ order.payTypeName || '-' }}</div>
+              <div class="expand-row"><span>支付时间：</span>{{ order.payTime || '-' }}</div>
+              <div class="expand-row"><span>创建时间：</span>{{ order.createTime || '-' }}</div>
+              <div class="expand-row" v-if="order.remark"><span>备注：</span>{{ order.remark }}</div>
             </div>
           </div>
         </div>
@@ -1503,6 +1513,34 @@ onUnmounted(() => {
   background: #e8f5e9;
   color: #4caf50;
   cursor: default;
+}
+
+.order-btn.detail {
+  background: #f0f2f5;
+  color: #606266;
+}
+.order-btn.detail:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+
+/* 展开的订单详情 */
+.order-expand-detail {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8f9fb;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+.expand-row {
+  padding: 3px 0;
+  font-size: 13px;
+  color: #555;
+}
+.expand-row span {
+  color: #999;
+  margin-right: 4px;
 }
 
 /* ==================== 评价列表 ==================== */
