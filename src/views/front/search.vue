@@ -209,17 +209,18 @@
               <div class="filter-options">
                 <label
                   v-for="type in typeOptions"
-                  :key="type"
+                  :key="type.value"
                   class="filter-option"
                 >
                   <input
-                    type="checkbox"
-                    v-model="filters.types"
-                    :value="type"
+                    type="radio"
+                    v-model="filters.categoryId"
+                    :value="type.value"
+                    name="category"
                     @change="handleFilter"
                   />
-                  <span class="checkbox-custom"></span>
-                  <span class="option-label">{{ type }}</span>
+                  <span class="radio-custom"></span>
+                  <span class="option-label">{{ type.label }}</span>
                 </label>
               </div>
             </div>
@@ -334,7 +335,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, Loading } from '@element-plus/icons-vue'
 import HotelCard from '@/components/HotelCard.vue'
-import { searchHotels, getHotelRooms } from '@/api/front/hotel'
+import { searchHotels, getHotelRooms, getCategoryList } from '@/api/front/hotel'
 import useUserStore from '@/store/modules/user'
 import { getToken } from '@/utils/auth'
 
@@ -357,7 +358,7 @@ const filters = ref({
   maxPrice: null,
   minScore: null,
   facilities: [],
-  types: []
+  categoryId: null
 })
 
 // 排序和分页
@@ -410,15 +411,8 @@ const facilityOptions = [
   '行李寄存'
 ]
 
-// 酒店类型选项
-const typeOptions = [
-  '豪华酒店',
-  '商务酒店',
-  '度假酒店',
-  '经济型酒店',
-  '民宿',
-  '公寓'
-]
+// 酒店类型选项（从后端动态加载）
+const typeOptions = ref([])
 
 // 排序选项
 const sortOptions = [
@@ -482,7 +476,7 @@ function resetFilters() {
     maxPrice: null,
     minScore: null,
     facilities: [],
-    types: []
+    categoryId: null
   }
   currentSort.value = 'recommend'
   currentPage.value = 1
@@ -501,6 +495,22 @@ const sortFieldMap = {
   'review_desc': { orderBy: 'createTime', orderDirection: 'desc' }
 }
 
+// 加载酒店分类列表
+async function loadCategories() {
+  try {
+    const res = await getCategoryList()
+    const data = res.data || res
+    if (Array.isArray(data)) {
+      typeOptions.value = data.map(item => ({
+        value: item.categoryId,
+        label: item.categoryName
+      }))
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
+
 // 获取酒店数据（使用后端分页）
 async function fetchHotels() {
   loading.value = true
@@ -508,14 +518,15 @@ async function fetchHotels() {
     const sortConfig = sortFieldMap[currentSort.value] || sortFieldMap['recommend']
 
     const params = {
-      currentPage: currentPage.value,
+      pageNum: currentPage.value,
       pageSize: pageSize.value,
       keyword: searchForm.value.keyword || undefined,
-      star: filters.value.star.length === 1 ? filters.value.star[0] : undefined,
+      starList: filters.value.star.length > 0 ? filters.value.star.join(',') : undefined,
       minPrice: filters.value.minPrice || undefined,
       maxPrice: filters.value.maxPrice || undefined,
       minScore: filters.value.minScore || undefined,
       facility: filters.value.facilities.length > 0 ? filters.value.facilities.join(',') : undefined,
+      categoryId: filters.value.categoryId || undefined,
       orderBy: sortConfig.orderBy,
       orderDirection: sortConfig.orderDirection
     }
@@ -710,6 +721,7 @@ watch(() => route.query, (newQuery) => {
 
 onMounted(() => {
   initSearchParams()
+  loadCategories()
   fetchHotels()
 })
 </script>

@@ -41,6 +41,11 @@ export function getHotSalesRank() {
   return publicRequest({ url: '/api/hotel/hotSales', method: 'get' })
 }
 
+// 查询酒店分类列表（公开接口）
+export function getCategoryList() {
+  return publicRequest({ url: '/api/category/select', method: 'get' })
+}
+
 // 创建订单
 export function createOrder(data) {
   return request({ url: '/api/order', method: 'post', data: data })

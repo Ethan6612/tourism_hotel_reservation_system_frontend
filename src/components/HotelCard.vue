@@ -6,6 +6,10 @@
     </div>
     <div class="hotel-info">
       <h3 class="hotel-name">{{ hotelName }}</h3>
+      <div class="hotel-stars" v-if="hotel.star">
+        <span v-for="i in hotel.star" :key="i" class="star filled">★</span>
+        <span v-for="i in (5 - hotel.star)" :key="'empty-' + i" class="star empty">☆</span>
+      </div>
       <p class="hotel-address">{{ hotel.address }}</p>
       <div class="hotel-score">
         <span class="score">{{ hotel.score || 4.5 }}</span>
@@ -63,13 +67,14 @@ const minPrice = computed(() => {
 // 设施列表 - 处理字符串或数组，兼容 facility(后端) / facilities
 const displayFacilities = computed(() => {
   const raw = props.hotel.facilities || props.hotel.facility
+  let list = []
   if (Array.isArray(raw)) {
-    return raw.slice(0, 4)
+    list = raw
+  } else if (typeof raw === 'string' && raw) {
+    list = raw.split(',').filter(f => f.trim())
   }
-  if (typeof raw === 'string' && raw) {
-    return raw.split(',').slice(0, 4)
-  }
-  return []
+  // 最多显示4个设施
+  return list.slice(0, 4)
 })
 
 // 图片加载失败处理
@@ -136,10 +141,27 @@ function goToDetail() {
   font-size: 18px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.hotel-stars {
+  margin-bottom: 6px;
+}
+
+.star {
+  font-size: 14px;
+  margin-right: 2px;
+}
+
+.star.filled {
+  color: #ffb800;
+}
+
+.star.empty {
+  color: #ddd;
 }
 
 .hotel-address {
