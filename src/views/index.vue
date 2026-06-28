@@ -3,11 +3,11 @@
     <!-- ==================== 管理员仪表盘 ==================== -->
     <template v-if="isAdmin">
       <el-row :gutter="20" class="dashboard-stats">
-        <el-col :xs="12" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
+        <el-col :xs="12" :sm="12" :md="3">
+          <el-card class="stat-card clickable" shadow="hover" @click="goToMerchantManage">
             <div class="stat-content">
               <div class="stat-icon merchant-icon">
-                <el-icon :size="36"><OfficeBuilding /></el-icon>
+                <el-icon :size="32"><OfficeBuilding /></el-icon>
               </div>
               <div class="stat-info">
                 <div class="stat-value">{{ statistics.merchantCount }}</div>
@@ -16,24 +16,66 @@
             </div>
           </el-card>
         </el-col>
-        <el-col :xs="12" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
+        <el-col :xs="12" :sm="12" :md="3">
+          <el-card class="stat-card clickable" shadow="hover" @click="goToHotelManage">
+            <div class="stat-content">
+              <div class="stat-icon hotel-icon">
+                <el-icon :size="32"><House /></el-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value">{{ statistics.hotelCount }}</div>
+                <div class="stat-label">酒店总数</div>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :xs="12" :sm="12" :md="3">
+          <el-card class="stat-card clickable" :class="{ 'has-alert': statistics.pendingAuditCount > 0 }" shadow="hover" @click="goToMerchantAudit">
             <div class="stat-content">
               <div class="stat-icon pending-icon">
-                <el-icon :size="36"><User /></el-icon>
+                <el-icon :size="32"><User /></el-icon>
               </div>
               <div class="stat-info">
                 <div class="stat-value">{{ statistics.pendingAuditCount }}</div>
                 <div class="stat-label">待审核商户</div>
               </div>
             </div>
+            <div v-if="statistics.pendingAuditCount > 0" class="stat-badge">待处理</div>
           </el-card>
         </el-col>
-        <el-col :xs="12" :sm="12" :md="6">
+        <el-col :xs="12" :sm="12" :md="3">
+          <el-card class="stat-card clickable" :class="{ 'has-alert': statistics.pendingHotelAuditCount > 0 }" shadow="hover" @click="goToHotelAudit">
+            <div class="stat-content">
+              <div class="stat-icon hotel-audit-icon">
+                <el-icon :size="32"><House /></el-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value">{{ statistics.pendingHotelAuditCount }}</div>
+                <div class="stat-label">待审核酒店</div>
+              </div>
+            </div>
+            <div v-if="statistics.pendingHotelAuditCount > 0" class="stat-badge">待处理</div>
+          </el-card>
+        </el-col>
+        <el-col :xs="12" :sm="12" :md="3">
+          <el-card class="stat-card clickable" :class="{ 'has-alert': statistics.lowStockCount > 0 }" shadow="hover" @click="goToLowStock">
+            <div class="stat-content">
+              <div class="stat-icon stock-icon">
+                <el-icon :size="32"><Box /></el-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value">{{ statistics.lowStockCount }}</div>
+                <div class="stat-label">库存预警</div>
+              </div>
+            </div>
+            <div v-if="statistics.lowStockCount > 0" class="stat-badge warning">需补货</div>
+          </el-card>
+        </el-col>
+        <el-col :xs="12" :sm="12" :md="3">
           <el-card class="stat-card clickable" shadow="hover" @click="goToOrders">
             <div class="stat-content">
               <div class="stat-icon order-icon">
-                <el-icon :size="36"><Tickets /></el-icon>
+                <el-icon :size="32"><Tickets /></el-icon>
               </div>
               <div class="stat-info">
                 <div class="stat-value">{{ statistics.todayOrderCount }}</div>
@@ -42,11 +84,11 @@
             </div>
           </el-card>
         </el-col>
-        <el-col :xs="12" :sm="12" :md="6">
-          <el-card class="stat-card" shadow="hover">
+        <el-col :xs="12" :sm="12" :md="3">
+          <el-card class="stat-card clickable" shadow="hover" @click="goToOrders">
             <div class="stat-content">
               <div class="stat-icon revenue-icon">
-                <el-icon :size="36"><Money /></el-icon>
+                <el-icon :size="32"><Money /></el-icon>
               </div>
               <div class="stat-info">
                 <div class="stat-value">¥{{ formatAmount(statistics.totalRevenue) }}</div>
@@ -89,6 +131,52 @@
               </el-table-column>
             </el-table>
             <div v-if="recentOrders.length === 0" class="empty-tip">暂无最近订单</div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <!-- 待办提醒区域 -->
+      <el-row :gutter="20" class="dashboard-alerts" v-if="hasAlerts">
+        <el-col :span="24">
+          <el-card class="alert-card">
+            <template #header>
+              <div class="alert-header">
+                <el-icon :size="20"><Bell /></el-icon>
+                <span>待办提醒</span>
+              </div>
+            </template>
+            <div class="alert-list">
+              <div v-if="statistics.pendingAuditCount > 0" class="alert-item warning" @click="goToMerchantAudit">
+                <div class="alert-icon">
+                  <el-icon :size="24"><UserFilled /></el-icon>
+                </div>
+                <div class="alert-info">
+                  <div class="alert-title">商户审核</div>
+                  <div class="alert-desc">有 <strong>{{ statistics.pendingAuditCount }}</strong> 个商户等待审核</div>
+                </div>
+                <el-button type="warning" size="small">立即审核</el-button>
+              </div>
+              <div v-if="statistics.pendingHotelAuditCount > 0" class="alert-item warning" @click="goToHotelAudit">
+                <div class="alert-icon">
+                  <el-icon :size="24"><House /></el-icon>
+                </div>
+                <div class="alert-info">
+                  <div class="alert-title">酒店审核</div>
+                  <div class="alert-desc">有 <strong>{{ statistics.pendingHotelAuditCount }}</strong> 个酒店等待审核</div>
+                </div>
+                <el-button type="warning" size="small">立即审核</el-button>
+              </div>
+              <div v-if="statistics.lowStockCount > 0" class="alert-item danger" @click="goToLowStock">
+                <div class="alert-icon">
+                  <el-icon :size="24"><WarningFilled /></el-icon>
+                </div>
+                <div class="alert-info">
+                  <div class="alert-title">库存预警</div>
+                  <div class="alert-desc">有 <strong>{{ statistics.lowStockCount }}</strong> 个房型库存不足</div>
+                </div>
+                <el-button type="danger" size="small">查看预警</el-button>
+              </div>
+            </div>
           </el-card>
         </el-col>
       </el-row>
@@ -197,15 +285,17 @@
 
 <script setup name="Index">
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { OfficeBuilding, User, Grid, Tickets, Money } from '@element-plus/icons-vue'
+import { OfficeBuilding, User, Grid, Tickets, Money, Bell, UserFilled, WarningFilled, Box, House } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
 import useUserStore from '@/store/modules/user'
 import { listMerchant, getMyMerchant } from '@/api/biz/merchant'
+import { listHotel } from '@/api/biz/adminHotel'
+import { getPendingCount } from '@/api/biz/hotelAudit'
 import { listOrder } from '@/api/biz/order'
 import { getMerchantDashboard } from '@/api/biz/statistics'
 import { getMerchantCommentStatistics } from '@/api/biz/comment'
-import { listRoom } from '@/api/biz/room'
+import { listRoom, getLowStockRooms } from '@/api/biz/adminRoom'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -227,13 +317,22 @@ const merchantChartRef = ref(null)
 const statistics = ref({
   // admin
   merchantCount: 0,
+  hotelCount: 0,
   pendingAuditCount: 0,
+  pendingHotelAuditCount: 0,
+  lowStockCount: 0,
   totalRevenue: 0,
   // merchant
-  hotelCount: 0,
   roomCount: 0,
   todayOrderCount: 0,
   monthRevenue: 0
+})
+
+// 是否有待办事项
+const hasAlerts = computed(() => {
+  return statistics.value.pendingAuditCount > 0 ||
+         statistics.value.pendingHotelAuditCount > 0 ||
+         statistics.value.lowStockCount > 0
 })
 
 const recentOrders = ref([])
@@ -241,6 +340,11 @@ const merchantRankList = ref([])
 const hotelRankList = ref([])
 
 function goToOrders() { router.push('/today-orders') }
+function goToMerchantManage() { router.push('/system/merchant') }
+function goToHotelManage() { router.push('/biz/hotelManage/hotelInfo') }
+function goToMerchantAudit() { router.push('/biz/merchantAudit') }
+function goToHotelAudit() { router.push('/biz/hotelAudit') }
+function goToLowStock() { router.push('/biz/hotelManage/stockAlert') }
 function formatAmount(val) {
   if (val == null || val === 0) return '0'
   const num = Number(val)
@@ -282,6 +386,40 @@ async function loadAdminRevenue() {
       return createDate === today
     }).length
   } catch { /* ignore */ }
+}
+
+async function loadLowStockCount() {
+  try {
+    const res = await getLowStockRooms(5)
+    const list = res.data || res || []
+    statistics.value.lowStockCount = Array.isArray(list) ? list.length : 0
+  } catch {
+    statistics.value.lowStockCount = 0
+  }
+}
+
+async function loadHotelAuditCount() {
+  try {
+    // 使用专用API查询待审核酒店数量
+    const res = await getPendingCount()
+    const data = res?.data || res
+    statistics.value.pendingHotelAuditCount = typeof data === 'number' ? data : (data?.total || data?.count || 0)
+  } catch (e) {
+    console.error('loadHotelAuditCount error:', e)
+    statistics.value.pendingHotelAuditCount = 0
+  }
+}
+
+async function loadHotelCount() {
+  try {
+    // 查询所有酒店（不传 status 参数）
+    const res = await listHotel({ pageNum: 1, pageSize: 1 })
+    const data = res?.data || res
+    statistics.value.hotelCount = data?.total || 0
+  } catch (e) {
+    console.error('loadHotelCount error:', e)
+    statistics.value.hotelCount = 0
+  }
 }
 
 function initAdminMerchantChart(merchants) {
@@ -394,6 +532,9 @@ onMounted(async () => {
     await loadRecentOrders()
     const merchants = await loadAdminMerchantStats()
     await loadAdminRevenue()
+    await loadHotelCount()
+    await loadLowStockCount()
+    await loadHotelAuditCount()
     nextTick(() => { initAdminMerchantChart(merchants) })
   } else {
     // 商户：先检查审核状态，再加载商户专用数据
@@ -439,13 +580,111 @@ async function checkMerchantBeforeLoad() {
 .dashboard {
   padding: 20px;
 
+  .dashboard-alerts {
+    margin-bottom: 20px;
+
+    .alert-card {
+      .alert-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #e6a23c;
+      }
+
+      .alert-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .alert-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+
+        &.warning {
+          background: #fdf6ec;
+          border: 1px solid #e6a23c;
+
+          &:hover { background: #faecd8; }
+          .alert-icon { color: #e6a23c; }
+        }
+
+        &.danger {
+          background: #fef0f0;
+          border: 1px solid #f56c6c;
+
+          &:hover { background: #fde2e2; }
+          .alert-icon { color: #f56c6c; }
+        }
+
+        .alert-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.8);
+        }
+
+        .alert-info {
+          flex: 1;
+
+          .alert-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #303133;
+            margin-bottom: 4px;
+          }
+
+          .alert-desc {
+            font-size: 14px;
+            color: #606266;
+
+            strong {
+              color: #f56c6c;
+              font-size: 18px;
+            }
+          }
+        }
+      }
+    }
+  }
+
   .dashboard-stats {
     margin-bottom: 20px;
 
     .stat-card {
+      position: relative;
       transition: all 0.3s;
       &.clickable { cursor: pointer; }
       &:hover { transform: translateY(-5px); }
+
+      &.has-alert {
+        border: 2px solid #e6a23c;
+        animation: pulse 2s infinite;
+      }
+
+      .stat-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #f56c6c;
+        color: #fff;
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 10px;
+
+        &.warning {
+          background: #e6a23c;
+        }
+      }
 
       .stat-content {
         display: flex;
@@ -465,6 +704,8 @@ async function checkMerchantBeforeLoad() {
           &.pending-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: #fff; }
           &.hotel-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
           &.room-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: #fff; }
+          &.stock-icon { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #fff; }
+          &.hotel-audit-icon { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #fff; }
           &.order-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #fff; }
           &.revenue-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #fff; }
         }
@@ -476,6 +717,12 @@ async function checkMerchantBeforeLoad() {
         }
       }
     }
+  }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(230, 162, 60, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(230, 162, 60, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(230, 162, 60, 0); }
   }
 
   .dashboard-charts {

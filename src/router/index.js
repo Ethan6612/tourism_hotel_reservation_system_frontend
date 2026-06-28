@@ -156,6 +156,66 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/biz/hotelManage/hotelAudit',
+    component: Layout,
+    hidden: true,
+    name: 'HotelAudit',
+    meta: { title: '酒店审核', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/hotelManage/hotelAudit'),
+        name: 'HotelAuditIndex',
+        meta: { title: '酒店审核', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
+    path: '/biz/hotelManage/room',
+    component: Layout,
+    hidden: true,
+    name: 'RoomManage',
+    meta: { title: '房源管理', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/hotelManage/roomManage'),
+        name: 'RoomManageIndex',
+        meta: { title: '房源管理', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
+    path: '/biz/hotelManage/hotelInfo',
+    component: Layout,
+    hidden: true,
+    name: 'HotelInfo',
+    meta: { title: '酒店管理', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/hotelManage/hotelInfo'),
+        name: 'HotelInfoIndex',
+        meta: { title: '酒店管理', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
+    path: '/biz/hotelManage/stockAlert',
+    component: Layout,
+    hidden: true,
+    name: 'StockAlert',
+    meta: { title: '库存预警', roles: ['admin', 'ROLE_ADMIN'] },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/biz/hotelManage/stockAlert'),
+        name: 'StockAlertIndex',
+        meta: { title: '库存预警', roles: ['admin', 'ROLE_ADMIN'] }
+      }
+    ]
+  },
+  {
     path: '/system/comment',
     component: Layout,
     hidden: true,

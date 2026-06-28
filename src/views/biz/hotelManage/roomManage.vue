@@ -28,7 +28,7 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd">新增房型</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Warning" @click="showLowStock">库存预警</el-button>
+        <el-button type="warning" plain icon="Warning" @click="goToStockAlert">库存预警</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -131,14 +131,14 @@
               <el-input-number v-model="form.price" :min="0" :precision="2" :step="10" style="width: 100%" />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="库存" prop="stock">
               <el-input-number v-model="form.stock" :min="0" :step="1" style="width: 100%" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="24">
+          <el-col :span="12">
             <el-form-item label="房型图片" prop="imgUrl">
               <ImageUpload
                 ref="imageUploadRef"
@@ -190,45 +190,17 @@
         <el-button type="primary" @click="submitStock">确认调整</el-button>
       </template>
     </el-dialog>
-
-    <!-- 库存预警对话框 -->
-    <el-dialog title="库存预警" v-model="lowStockOpen" width="700px" append-to-body>
-      <div v-if="lowStockList.length === 0" class="empty-stock">
-        <el-icon :size="48" color="#67c23a"><CircleCheck /></el-icon>
-        <p>暂无低库存房型，库存充足！</p>
-      </div>
-      <template v-else>
-        <div class="stock-summary">
-          <el-alert :title="`共有 ${lowStockList.length} 个房型库存不足`" type="warning" show-icon :closable="false" />
-        </div>
-        <el-table :data="lowStockList" border style="margin-top: 15px">
-          <el-table-column label="酒店名称" prop="hotelName" :show-overflow-tooltip="true" min-width="150" />
-          <el-table-column label="房型" prop="roomType" width="120" />
-          <el-table-column label="当前库存" width="100" align="center">
-            <template #default="scope">
-              <el-tag :type="scope.row.stock === 0 ? 'danger' : 'warning'" effect="dark">
-                {{ scope.row.stock }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
-            <template #default="scope">
-              <el-button link type="primary" icon="Box" @click="handleStockFromAlert(scope.row)">补货</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup name="AdminRoomManage">
 import { ref, getCurrentInstance } from 'vue'
-import { CircleCheck } from '@element-plus/icons-vue'
-import { listRoom, addRoom, updateRoom, delRoom, updateRoomStatus, updateRoomPrice, updateRoomStock, getLowStockRooms } from '@/api/biz/adminRoom'
+import { useRouter } from 'vue-router'
+import { listRoom, addRoom, updateRoom, delRoom, updateRoomStatus, updateRoomPrice, updateRoomStock } from '@/api/biz/adminRoom'
 import { listHotel } from '@/api/biz/adminHotel'
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
 
 const roomList = ref([])
 const loading = ref(false)
@@ -237,8 +209,6 @@ const total = ref(0)
 const open = ref(false)
 const priceOpen = ref(false)
 const stockOpen = ref(false)
-const lowStockOpen = ref(false)
-const lowStockList = ref([])
 const title = ref('')
 const currentRoom = ref({})
 
@@ -418,17 +388,10 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
-function showLowStock() {
-  getLowStockRooms(5).then(res => {
-    lowStockList.value = res.data || []
-    lowStockOpen.value = true
-  })
+function goToStockAlert() {
+  router.push('/biz/hotelManage/stockAlert')
 }
 
-function handleStockFromAlert(row) {
-  lowStockOpen.value = false
-  handleStock(row)
-}
 
 loadHotelOptions()
 getList()
@@ -439,23 +402,5 @@ getList()
   color: #e6a23c;
   font-weight: 600;
   font-size: 16px;
-}
-
-.empty-stock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-
-  p {
-    margin-top: 12px;
-    color: #67c23a;
-    font-size: 16px;
-  }
-}
-
-.stock-summary {
-  margin-bottom: 10px;
 }
 </style>
