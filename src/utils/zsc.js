@@ -189,9 +189,14 @@ export function getNormalPath(path) {
   }
   // 替换多个连续斜杠为单个斜杠
   let result = path.replace(/\/+/g, '/')
-  // 如果路径以 / 开头但不是 http(s) 开头，保留开头的 /
-  if (result.startsWith('/') && !isExternal(result)) {
-    return result
+  // 确保非外部链接的路径以 / 开头，与 vue-router 的 route.path 保持一致
+  // 这样 el-menu 的 default-active 才能与 el-menu-item 的 index 精确匹配，实现高亮
+  if (!isExternal(result) && !result.startsWith('/')) {
+    result = '/' + result
+  }
+  // 去掉尾部斜杠（保留根路径 /）
+  if (result.length > 1 && result.endsWith('/')) {
+    result = result.replace(/\/+$/, '')
   }
   return result
 }

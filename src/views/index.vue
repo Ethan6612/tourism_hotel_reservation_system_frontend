@@ -295,7 +295,9 @@ import { getPendingCount } from '@/api/biz/hotelAudit'
 import { listOrder } from '@/api/biz/order'
 import { getMerchantDashboard } from '@/api/biz/statistics'
 import { getMerchantCommentStatistics } from '@/api/biz/comment'
-import { listRoom, getLowStockRooms } from '@/api/biz/adminRoom'
+import { getLowStockRooms } from '@/api/biz/adminRoom'
+import { listRoom as listMerchantRoom } from '@/api/biz/room'
+import { listMerchantOrder } from '@/api/biz/merchantOrder'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -487,7 +489,8 @@ async function loadMerchantHotelRank() {
 
 async function loadMerchantRoomTypeData() {
   try {
-    const res = await listRoom({ pageNum: 1, pageSize: 100 })
+    // 商户使用商户专用房型API，只查询自己酒店下的房型
+    const res = await listMerchantRoom({ pageNum: 1, pageSize: 100 })
     const rooms = extractList(res)
     const typeMap = {}
     rooms.forEach(r => {
@@ -518,7 +521,9 @@ function initMerchantRoomChart(data) {
 // ==================== 通用：最近订单 ====================
 async function loadRecentOrders() {
   try {
-    const res = await listOrder({ pageNum: 1, pageSize: 5 })
+    // 管理员使用通用订单API，商户使用商户专用订单API
+    const orderApi = isAdmin.value ? listOrder : listMerchantOrder
+    const res = await orderApi({ pageNum: 1, pageSize: 5 })
     recentOrders.value = extractList(res).slice(0, 5)
   } catch {
     recentOrders.value = []
