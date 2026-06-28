@@ -30,7 +30,7 @@ router.beforeEach(async (to, from, next) => {
       const roles = useUserStore().roles
       const isAdmin = roles.some(r => r === 'admin' || r === 'ROLE_ADMIN')
       const isMerchant = roles.some(r => r === 'merchant' || r === 'ROLE_MERCHANT')
-      next({ path: (isAdmin || isMerchant) ? '/dashboard' : '/index' })
+      next({ path: (isAdmin || isMerchant) ? '/dashboard' : '/home' })
       NProgress.done()
     } else {
       // 已登录用户需要检查角色，即使是白名单路径也要检查
@@ -84,6 +84,12 @@ router.beforeEach(async (to, from, next) => {
         // 🔒 商户用户不能访问前台主页，重定向到商户中心
         if (isMerchant && (to.path === '/index' || to.path === '/home')) {
           next({ path: '/biz/merchant', replace: true })
+          return
+        }
+
+        // 🔒 普通用户访问 /index 时重定向到 /home（用户主页）
+        if (!isAdmin && !isMerchant && to.path === '/index') {
+          next({ path: '/home', replace: true })
           return
         }
 
