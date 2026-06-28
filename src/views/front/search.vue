@@ -103,8 +103,9 @@
               <a href="#" class="reset-link" @click.prevent="resetFilters">重置</a>
             </div>
 
-            <!-- 星级筛选 -->
-            <div class="filter-group">
+            <div class="filter-options-wrapper">
+              <!-- 星级筛选 -->
+              <div class="filter-group">
               <h4 class="filter-title">酒店星级</h4>
               <div class="filter-options">
                 <label
@@ -223,6 +224,7 @@
                   <span class="option-label">{{ type.label }}</span>
                 </label>
               </div>
+            </div>
             </div>
           </aside>
 
@@ -867,6 +869,9 @@ onMounted(() => {
   background: #fff;
   padding: 80px 0 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
 .search-bar {
@@ -971,20 +976,41 @@ onMounted(() => {
   flex-shrink: 0;
   background: #fff;
   border-radius: 8px;
-  padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  height: fit-content;
   position: sticky;
-  top: 90px;
+  top: 180px;
+  max-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.filter-options-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.filter-options-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filter-options-wrapper::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 6px;
+}
+
+.filter-options-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #ccc;
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  padding: 20px 20px 15px;
   border-bottom: 1px solid #eee;
+  flex-shrink: 0;
 }
 
 .filter-header h3 {

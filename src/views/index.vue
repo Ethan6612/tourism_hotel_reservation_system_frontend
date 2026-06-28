@@ -249,18 +249,20 @@ function formatAmount(val) {
 }
 
 function extractList(res) {
-  const list = res.data?.list || res.data?.rows || res.rows || res.data || []
+  const data = res?.data || res
+  const list = data?.rows || data?.list || data?.records || []
   return Array.isArray(list) ? list : []
 }
 
 // ==================== 管理员数据加载 ====================
 async function loadAdminMerchantStats() {
   try {
-    const res = await listMerchant({ pageNum: 1, pageSize: 1000 })
+    // 查询全部商户（auditStatus 为空时不过滤）
+    const res = await listMerchant({ pageNum: 1, pageSize: 100 })
     const list = extractList(res)
     merchantRankList.value = list.slice(0, 10)
     statistics.value.merchantCount = list.length
-    statistics.value.pendingAuditCount = list.filter(m => m.auditStatus === '0').length
+    statistics.value.pendingAuditCount = list.filter(m => m.auditStatus === '0' || m.auditStatus === 0).length
     return list
   } catch {
     merchantRankList.value = []
@@ -303,21 +305,21 @@ function initAdminMerchantChart(merchants) {
 }
 
 function getMerchantStatusLabel(m) {
-  if (m.status === '4') return '已冻结'
-  if (m.status === '3') return '已注销'
-  if (m.auditStatus === '0') return '待审核'
-  if (m.auditStatus === '2') return '审核拒绝'
-  if (m.status === '0') return '营业中'
-  if (m.status === '1') return '未激活'
+  if (m.status === '4' || m.status === 4) return '已冻结'
+  if (m.status === '3' || m.status === 3) return '已注销'
+  if (m.auditStatus === '0' || m.auditStatus === 0) return '待审核'
+  if (m.auditStatus === '2' || m.auditStatus === 2) return '审核拒绝'
+  if (m.status === '0' || m.status === 0) return '营业中'
+  if (m.status === '1' || m.status === 1) return '未激活'
   return '其他'
 }
 
 function getStatusTag(m) {
-  if (m.status === '4') return { type: 'danger', label: '已冻结' }
-  if (m.status === '3') return { type: 'info', label: '已注销' }
-  if (m.auditStatus === '0') return { type: 'warning', label: '待审核' }
-  if (m.auditStatus === '2') return { type: 'danger', label: '审核拒绝' }
-  if (m.status === '0') return { type: 'success', label: '营业中' }
+  if (m.status === '4' || m.status === 4) return { type: 'danger', label: '已冻结' }
+  if (m.status === '3' || m.status === 3) return { type: 'info', label: '已注销' }
+  if (m.auditStatus === '0' || m.auditStatus === 0) return { type: 'warning', label: '待审核' }
+  if (m.auditStatus === '2' || m.auditStatus === 2) return { type: 'danger', label: '审核拒绝' }
+  if (m.status === '0' || m.status === 0) return { type: 'success', label: '营业中' }
   return { type: 'info', label: '未知' }
 }
 
