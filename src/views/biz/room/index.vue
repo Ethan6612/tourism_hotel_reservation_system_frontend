@@ -43,6 +43,11 @@
       <el-table-column label="房型名称" align="center" prop="roomType" :show-overflow-tooltip="true" min-width="120" />
       <el-table-column label="面积" align="center" prop="area" width="80" />
       <el-table-column label="床型" align="center" prop="bedType" width="100" />
+      <el-table-column label="可住人数" align="center" prop="guestNum" width="90">
+        <template #default="scope">
+          {{ scope.row.guestNum || '-' }}人
+        </template>
+      </el-table-column>
       <el-table-column label="价格" align="center" prop="price" width="110">
         <template #default="scope">
           <span class="price-text">¥{{ scope.row.price }}</span>
@@ -106,18 +111,25 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="价格" prop="price">
-              <el-input-number v-model="form.price" :min="0" :precision="2" :step="10" style="width: 100%" />
+            <el-form-item label="可住人数" prop="guestNum">
+              <el-input-number v-model="form.guestNum" :min="1" :max="20" :step="1" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
+            <el-form-item label="价格" prop="price">
+              <el-input-number v-model="form.price" :min="0" :precision="2" :step="10" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="库存" prop="stock">
               <el-input-number v-model="form.stock" :min="0" :step="1" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="24">
             <el-form-item label="房型图片" prop="imgUrl">
               <ImageUpload
                 ref="imageUploadRef"
@@ -240,6 +252,7 @@ const form = ref({
   roomType: '',
   area: '',
   bedType: '',
+  guestNum: 2,
   price: 0,
   stock: 0,
   imgUrl: ''
@@ -283,6 +296,7 @@ function reset() {
     roomType: '',
     area: '',
     bedType: '',
+    guestNum: 2,
     price: 0,
     stock: 0,
     imgUrl: ''

@@ -10,7 +10,7 @@
         <nav class="nav">
           <a href="/index" class="nav-item active">首页</a>
           <a href="/search" class="nav-item">酒店</a>
-          <a href="#" class="nav-item">关于我们</a>
+          <a href="#" class="nav-item" @click.prevent="showAboutDialog = true">关于我们</a>
         </nav>
         <div class="user-actions">
           <template v-if="isLoggedIn">
@@ -206,13 +206,45 @@
       </div>
     </section>
 
+    <!-- 关于我们对话框 -->
+    <el-dialog v-model="showAboutDialog" title="关于我们" width="600px" center>
+      <div class="about-content">
+        <div class="about-header">
+          <span class="about-logo">🏨</span>
+          <h2>ZSC酒店预订平台</h2>
+        </div>
+        <div class="about-body">
+          <h3>公司简介</h3>
+          <p>ZSC酒店预订平台是一家专注于为用户提供优质酒店预订服务的在线平台。我们致力于整合全国优质酒店资源，为商旅人士和休闲游客提供便捷、高效、实惠的住宿预订体验。</p>
+          <p>平台支持多维度智能搜索、实时房态查询、在线预订及评价分享，让您的每一次出行都能找到理想的住所。</p>
+
+          <h3>我们的优势</h3>
+          <ul>
+            <li><strong>海量酒店资源</strong>：覆盖全国各大城市，提供数万家优质酒店选择</li>
+            <li><strong>智能搜索推荐</strong>：根据您的需求精准匹配，快速找到心仪住所</li>
+            <li><strong>实时房态查询</strong>：库存实时更新，预订即确认，无需等待</li>
+            <li><strong>安全支付保障</strong>：多种支付方式，交易安全有保障</li>
+            <li><strong>贴心售后服务</strong>：7×24小时客服支持，让您出行无忧</li>
+          </ul>
+
+          <h3>联系我们</h3>
+          <p>客服电话：400-XXX-XXXX</p>
+          <p>电子邮箱：contact@zsc-hotel.com</p>
+          <p>公司地址：广东省广州市XXX区XXX路XXX号</p>
+        </div>
+      </div>
+    </el-dialog>
+
     <!-- 页脚 -->
     <footer class="footer">
       <div class="container">
         <div class="footer-content">
-          <div class="footer-logo">
-            <span class="logo-icon">🏨</span>
-            <span class="logo-text">ZSC酒店预订</span>
+          <div class="footer-about">
+            <div class="footer-logo">
+              <span class="logo-icon">🏨</span>
+              <span class="logo-text">ZSC酒店预订</span>
+            </div>
+            <p class="footer-desc">ZSC酒店预订平台是一家专注于为用户提供优质酒店预订服务的在线平台。我们致力于整合全国优质酒店资源，为商旅人士和休闲游客提供便捷、高效、实惠的住宿预订体验。平台支持多维度智能搜索、实时房态查询、在线预订及评价分享，让您的每一次出行都能找到理想的住所。</p>
           </div>
           <div class="footer-links">
             <h4>关于我们</h4>
@@ -220,6 +252,7 @@
               <li><a href="#">公司简介</a></li>
               <li><a href="#">联系我们</a></li>
               <li><a href="#">加入我们</a></li>
+              <li><a href="#">合作伙伴</a></li>
             </ul>
           </div>
           <div class="footer-links">
@@ -228,6 +261,7 @@
               <li><a href="#">常见问题</a></li>
               <li><a href="#">预订指南</a></li>
               <li><a href="#">退款政策</a></li>
+              <li><a href="#">隐私政策</a></li>
             </ul>
           </div>
           <div class="footer-links">
@@ -235,11 +269,12 @@
             <ul>
               <li><a href="#">酒店加盟</a></li>
               <li><a href="#">企业合作</a></li>
+              <li><a href="#">广告投放</a></li>
             </ul>
           </div>
         </div>
         <div class="footer-bottom">
-          <p>© 2026 ZSC酒店预订. All rights reserved.</p>
+          <p>© 2026 ZSC酒店预订 版权所有 | 粤ICP备XXXXXXXX号 | 联系电话：400-XXX-XXXX | 邮箱：contact@zsc-hotel.com</p>
         </div>
       </div>
     </footer>
@@ -258,6 +293,8 @@ import { getToken } from '@/utils/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+const showAboutDialog = ref(false)
 
 const searchForm = ref({
   destination: '',
@@ -859,17 +896,83 @@ async function loadHotSalesRank() {
   color: #fff;
 }
 
+/* 关于我们对话框 */
+.about-content {
+  padding: 10px 0;
+}
+
+.about-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.about-logo {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.about-header h2 {
+  font-size: 24px;
+  color: #333;
+  margin: 0;
+}
+
+.about-body h3 {
+  font-size: 18px;
+  color: #ff6b6b;
+  margin: 20px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #ff6b6b;
+  display: inline-block;
+}
+
+.about-body p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.8;
+  margin: 10px 0;
+}
+
+.about-body ul {
+  padding-left: 20px;
+}
+
+.about-body li {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.8;
+  margin: 8px 0;
+}
+
+.about-body li strong {
+  color: #333;
+}
+
 .footer-content {
   display: flex;
   justify-content: space-between;
+  gap: 40px;
   padding: 40px 0;
   border-bottom: 1px solid #444;
+}
+
+.footer-about {
+  flex: 1;
+  max-width: 350px;
 }
 
 .footer-logo {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 12px;
+}
+
+.footer-desc {
+  color: #999;
+  font-size: 13px;
+  line-height: 1.8;
 }
 
 .footer-links h4 {

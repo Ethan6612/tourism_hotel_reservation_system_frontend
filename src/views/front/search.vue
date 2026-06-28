@@ -293,9 +293,12 @@
     <footer class="footer">
       <div class="container">
         <div class="footer-content">
-          <div class="footer-logo">
-            <span class="logo-icon">🏨</span>
-            <span class="logo-text">ZSC酒店预订</span>
+          <div class="footer-about">
+            <div class="footer-logo">
+              <span class="logo-icon">🏨</span>
+              <span class="logo-text">ZSC酒店预订</span>
+            </div>
+            <p class="footer-desc">ZSC酒店预订平台是一家专注于为用户提供优质酒店预订服务的在线平台。我们致力于整合全国优质酒店资源，为商旅人士和休闲游客提供便捷、高效、实惠的住宿预订体验。</p>
           </div>
           <div class="footer-links">
             <h4>关于我们</h4>
@@ -303,6 +306,7 @@
               <li><a href="#">公司简介</a></li>
               <li><a href="#">联系我们</a></li>
               <li><a href="#">加入我们</a></li>
+              <li><a href="#">合作伙伴</a></li>
             </ul>
           </div>
           <div class="footer-links">
@@ -311,6 +315,7 @@
               <li><a href="#">常见问题</a></li>
               <li><a href="#">预订指南</a></li>
               <li><a href="#">退款政策</a></li>
+              <li><a href="#">隐私政策</a></li>
             </ul>
           </div>
           <div class="footer-links">
@@ -318,11 +323,12 @@
             <ul>
               <li><a href="#">酒店加盟</a></li>
               <li><a href="#">企业合作</a></li>
+              <li><a href="#">广告投放</a></li>
             </ul>
           </div>
         </div>
         <div class="footer-bottom">
-          <p>© 2026 ZSC酒店预订. All rights reserved.</p>
+          <p>© 2026 ZSC酒店预订 版权所有 | 粤ICP备XXXXXXXX号 | 联系电话：400-XXX-XXXX | 邮箱：contact@zsc-hotel.com</p>
         </div>
       </div>
     </footer>
@@ -527,6 +533,7 @@ async function fetchHotels() {
       minScore: filters.value.minScore || undefined,
       facility: filters.value.facilities.length > 0 ? filters.value.facilities.join(',') : undefined,
       categoryId: filters.value.categoryId || undefined,
+      guests: searchForm.value.guests ? Number(searchForm.value.guests) : undefined,
       orderBy: sortConfig.orderBy,
       orderDirection: sortConfig.orderDirection
     }
@@ -1311,14 +1318,27 @@ onMounted(() => {
 .footer-content {
   display: flex;
   justify-content: space-between;
+  gap: 40px;
   padding: 40px 0;
   border-bottom: 1px solid #444;
+}
+
+.footer-about {
+  flex: 1;
+  max-width: 350px;
 }
 
 .footer-logo {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 12px;
+}
+
+.footer-desc {
+  color: #999;
+  font-size: 13px;
+  line-height: 1.8;
 }
 
 .footer-links h4 {
