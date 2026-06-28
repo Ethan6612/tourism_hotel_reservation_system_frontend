@@ -10,8 +10,8 @@
         <nav class="nav">
           <a href="/home" class="nav-item active">首页</a>
           <a href="/search" class="nav-item">酒店</a>
-          <a href="#" class="nav-item" @click.prevent="scrollToSection('orders')">我的订单</a>
-          <a href="#" class="nav-item" @click.prevent="scrollToSection('reviews')">我的评价</a>
+          <a href="#" class="nav-item" @click.prevent="goToOrders">我的订单</a>
+          <a href="#" class="nav-item" @click.prevent="goToReviews">我的评价</a>
         </nav>
         <div class="user-actions">
           <template v-if="isLoggedIn">

@@ -8,12 +8,17 @@
           <span class="logo-text">ZSC酒店预订</span>
         </div>
         <nav class="nav">
-          <a href="#" class="nav-item" @click.prevent="goHome">首页</a>
-          <a href="#" class="nav-item" @click.prevent="goToHotelList">酒店</a>
-          <a href="#" class="nav-item active">我的订单</a>
+          <a href="/home" class="nav-item">首页</a>
+          <a href="/search" class="nav-item">酒店</a>
+          <a href="#" class="nav-item" @click.prevent="goToOrders">我的订单</a>
+          <a href="#" class="nav-item" @click.prevent="goToReviews">我的评价</a>
         </nav>
         <div class="user-actions">
           <template v-if="isLoggedIn">
+            <div class="notification-bell" @click="goToNotifications">
+              <span class="bell-icon">🔔</span>
+              <span v-if="unreadCount > 0" class="badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            </div>
             <el-dropdown ref="userDropdown" @command="handleUserCommand" trigger="hover">
               <span class="user-dropdown">
                 <span class="user-avatar">{{ userAvatar }}</span>
@@ -26,9 +31,9 @@
                   <el-dropdown-item command="orders">我的订单</el-dropdown-item>
                   <el-dropdown-item command="points">我的积分</el-dropdown-item>
                   <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
-                  <el-dropdown-item command="home">返回首页</el-dropdown-item>
+                  <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
                   <el-dropdown-item command="console" v-if="isAdmin || isMerchant" divided>前往控制台</el-dropdown-item>
-                  <el-dropdown-item command="logout" :divided="isAdmin || isMerchant">退出登录</el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -159,6 +164,10 @@
                     <span class="price-value">{{ order.totalPrice }}</span>
                   </span>
                   <button
+                    class="order-btn detail-btn"
+                    @click="handleDetail(order)"
+                  >查看详情</button>
+                  <button
                     v-if="order.status === '0'"
                     class="order-btn pay-btn"
                     @click="handlePay(order)"
@@ -169,32 +178,34 @@
                     @click="handleCancel(order)"
                   >取消订单</button>
                   <button
-                    v-if="order.status === '1'"
-                    class="order-btn detail-btn"
-                    @click="handleDetail(order)"
-                  >查看详情</button>
-                  <button
                     v-if="order.status === '2' || order.status === '5' || order.status === '6'"
                     class="order-btn delete-btn"
                     @click="handleDelete(order)"
                   >删除</button>
                   <button
-                    v-if="order.status === '3'"
+                    v-if="order.status === '3' && !order.reviewed"
                     class="order-btn pay-btn"
                     style="background:#f0fdf4;color:#22c55e"
                     @click="handleDetail(order)"
-                  >已完成</button>
+                  >已入住</button>
                   <button
-                    v-if="order.status === '3'"
+                    v-if="order.status === '3' && !order.reviewed"
                     class="order-btn review-btn"
                     @click="goToWriteReview(order)"
                   >去评价</button>
                   <button
-                    v-if="order.status === '4'"
-                    class="order-btn detail-btn"
+                    v-if="order.status === '3' && order.reviewed"
+                    class="order-btn pay-btn"
+                    style="background:#e8f5e9;color:#4caf50"
                     @click="handleDetail(order)"
-                  >查看详情</button>
+                  >已完成</button>
                   <button
+                    v-if="order.status === '3' && order.reviewed"
+                    class="order-btn reviewed"
+                    disabled
+                  >已评价</button>
+                  <button
+                    v-if="order.status === '4'"
                     class="order-btn detail-btn"
                     @click="handleDetail(order)"
                   >查看详情</button>
@@ -305,6 +316,8 @@ const userAvatar = computed(() => (userStore.nickName || userStore.name || '用�
 const isAdmin = computed(() => userStore.roles?.some(r => r === 'admin' || r === 'ROLE_ADMIN'))
 const isMerchant = computed(() => userStore.roles?.some(r => r === 'merchant' || r === 'ROLE_MERCHANT'))
 
+const unreadCount = ref(0)
+
 const loading = ref(false)
 const orderList = ref([])
 const total = ref(0)
@@ -386,6 +399,9 @@ function goToLogin() { router.push('/login') }
 function goToRegister() { router.push('/login?tab=register') }
 function goToHotelList() { router.push('/search') }
 function goToPoints() { router.push('/user/profile/points') }
+function goToNotifications() { router.push('/user/notifications') }
+function goToReviews() { router.push('/user/myComments') }
+function goToOrders() { router.push('/user/profile/orders') }
 function goToWriteReview(order) {
   router.push({ path: '/user/comment/write', query: {
     orderId: order.id,
@@ -858,6 +874,7 @@ onMounted(() => {
 .delete-btn:hover { background: #ef4444; color: #fff; }
 
 .review-btn { background: #fff7ed; color: #ea580c; }
+.reviewed { background: #fef3c7; color: #d97706; cursor: default; }
 .review-btn:hover { background: #ea580c; color: #fff; }
 
 /* ==================== 空状态 ==================== */

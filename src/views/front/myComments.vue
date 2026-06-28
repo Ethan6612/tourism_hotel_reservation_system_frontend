@@ -1,5 +1,50 @@
 <template>
   <div class="my-comments-page">
+    <!-- 顶部导航 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo" @click="goHome">
+          <span class="logo-icon">🏨</span>
+          <span class="logo-text">ZSC酒店预订</span>
+        </div>
+        <nav class="nav">
+          <a href="#" class="nav-item" @click.prevent="goHome">首页</a>
+          <a href="#" class="nav-item active">我的评价</a>
+        </nav>
+        <div class="user-actions">
+          <template v-if="isLoggedIn">
+            <div class="notification-bell" @click="goToNotifications">
+              <span class="bell-icon">🔔</span>
+              <span v-if="unreadCount > 0" class="badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            </div>
+            <el-dropdown ref="userDropdown" @command="handleUserCommand" trigger="hover">
+              <span class="user-dropdown">
+                <span class="user-avatar">{{ userAvatar }}</span>
+                <span class="user-name">{{ userName }}</span>
+                <el-icon><ArrowDown /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                  <el-dropdown-item command="orders">我的订单</el-dropdown-item>
+                  <el-dropdown-item command="points">我的积分</el-dropdown-item>
+                  <el-dropdown-item command="reviews">我的评价</el-dropdown-item>
+                  <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
+                  <el-dropdown-item command="console" v-if="isAdmin || isMerchant" divided>前往控制台</el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+          <template v-else>
+            <button class="action-btn" @click="goToLogin">登录</button>
+            <button class="action-btn primary">注册</button>
+          </template>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-body">
     <div class="container">
       <!-- 页面标题 -->
       <div class="page-header">
@@ -104,6 +149,7 @@
         <el-button type="primary" @click="goHome">去看看酒店</el-button>
       </el-empty>
     </div>
+  </div>
 
     <!-- ========== 点赞列表对话框 ========== -->
     <el-dialog title="👍 点赞详情" v-model="likesOpen" width="420px" append-to-body>
@@ -148,9 +194,46 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { listMyComments, deleteMyComment, myCommentStatistics, likeComment, getCommentLikes } from '@/api/biz/comment'
+import useUserStore from '@/store/modules/user'
+import { getToken } from '@/utils/auth'
 
 const router = useRouter()
+const userStore = useUserStore()
+
+const isLoggedIn = computed(() => !!getToken())
+const userName = computed(() => userStore.nickName || userStore.name || '用户')
+const userAvatar = computed(() => (userStore.nickName || userStore.name || '用户').charAt(0).toUpperCase())
+const isAdmin = computed(() => userStore.roles?.some(r => r === 'admin' || r === 'ROLE_ADMIN'))
+const isMerchant = computed(() => userStore.roles?.some(r => r === 'merchant' || r === 'ROLE_MERCHANT'))
+
+const unreadCount = ref(0)
+
+function goHome() { router.push('/home') }
+function goToLogin() { router.push('/login') }
+function goToOrders() { router.push('/user/profile/orders') }
+function goToPoints() { router.push('/user/profile/points') }
+function goToNotifications() { router.push('/user/notifications') }
+
+function handleUserCommand(command) {
+  switch (command) {
+    case 'profile': router.push('/user/profile'); break
+    case 'orders': router.push('/user/profile/orders'); break
+    case 'points': router.push('/user/profile/points'); break
+    case 'reviews': router.push('/user/myComments'); break
+    case 'home': router.push('/home'); break
+    case 'console': router.push('/dashboard'); break
+    case 'logout': logout(); break
+  }
+}
+
+function logout() {
+  userStore.logOut().then(() => {
+    ElMessage.success('退出登录成功')
+    window.location.href = '/index'
+  })
+}
 
 const allComments = ref([])
 const searchHotel = ref('')
@@ -177,8 +260,6 @@ const filteredComments = computed(() => {
 })
 
 function filterList() { /* computed 自动处理 */ }
-
-function goHome() { router.push('/home') }
 
 function handleView(item) {
   viewForm.value = item
@@ -269,6 +350,32 @@ onMounted(() => { loadData() })
   min-height: 100vh;
   background: #f5f5f5;
 }
+
+/* ==================== 顶部导航 ==================== */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.header-content {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+}
+.logo { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.logo-icon { font-size: 24px; }
+.logo-text { font-size: 20px; font-weight: 700; color: #333; }
+.nav { display: flex; gap: 32px; }
+.nav-item { text-decoration: none; color: #666; font-size: 14px; transition: color 0.3s; cursor: pointer; }
+.nav-item:hover, .nav-item.active { color: #ff6b6b; }
+.user-actions { display: flex; gap: 12px; align-items: center; }
+.user-dropdown { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 12px; border-radius: 20px; }
+.user-dropdown:hover { background: rgba(0,0,0,0.05); }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+.user-name { font-size: 14px; color: #333; }
+.action-btn { padding: 8px 20px; border: 1px solid #ddd; border-radius: 20px; background: #fff; color: #666; font-size: 14px; cursor: pointer; }
+.action-btn.primary { background: linear-gradient(135deg, #ff6b6b, #ee5a24); border-color: transparent; color: #fff; }
+.page-body { padding-top: 80px; }
 
 .container {
   max-width: 900px;
