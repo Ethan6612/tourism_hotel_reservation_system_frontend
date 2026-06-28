@@ -63,11 +63,12 @@ export function getUserDashboardStats() {
   })
 }
 
-// 获取个性化推荐酒店
-export function getPersonalRecommend() {
+// 获取个性化推荐酒店（refresh 用于换一批，传入随机值让后端返回不同数据）
+export function getPersonalRecommend(params) {
   return request({
     url: '/api/hotel/personalRecommend',
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 

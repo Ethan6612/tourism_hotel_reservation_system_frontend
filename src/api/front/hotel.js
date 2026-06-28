@@ -31,9 +31,9 @@ export function getHotCities() {
   return publicRequest({ url: '/api/hotel/hotCities', method: 'get' })
 }
 
-// 查询推荐酒店
-export function getRecommendHotels() {
-  return publicRequest({ url: '/api/hotel/recommend', method: 'get' })
+// 查询推荐酒店（type: recommend/hot/luxury/budget）
+export function getRecommendHotels(params) {
+  return publicRequest({ url: '/api/hotel/recommend', method: 'get', params })
 }
 
 // 查询热销排行

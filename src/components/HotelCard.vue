@@ -46,7 +46,7 @@ const hotelName = computed(() => {
 
 // 图片URL - 兼容不同字段名
 const imageUrl = computed(() => {
-  const img = props.hotel.coverImage || props.hotel.image || props.hotel.img || props.hotel.pic
+  const img = props.hotel.coverImage || props.hotel.imgUrl || props.hotel.image || props.hotel.img || props.hotel.pic
   return img || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop'
 })
 
@@ -60,14 +60,14 @@ const minPrice = computed(() => {
   return props.hotel.minPrice || props.hotel.lowestPrice || props.hotel.price || 0
 })
 
-// 设施列表 - 处理字符串或数组
+// 设施列表 - 处理字符串或数组，兼容 facility(后端) / facilities
 const displayFacilities = computed(() => {
-  const facilities = props.hotel.facilities
-  if (Array.isArray(facilities)) {
-    return facilities.slice(0, 4)
+  const raw = props.hotel.facilities || props.hotel.facility
+  if (Array.isArray(raw)) {
+    return raw.slice(0, 4)
   }
-  if (typeof facilities === 'string' && facilities) {
-    return facilities.split(',').slice(0, 4)
+  if (typeof raw === 'string' && raw) {
+    return raw.split(',').slice(0, 4)
   }
   return []
 })

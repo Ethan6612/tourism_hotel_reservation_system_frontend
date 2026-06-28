@@ -327,12 +327,12 @@
             @click="searchByCity(city.name)"
           >
             <div class="city-image">
-              <img :src="city.image" :alt="city.name" />
+              <img :src="city.image" :alt="city.name" @error="e => e.target.src = defaultCityImage" />
               <div class="city-overlay"></div>
             </div>
             <div class="city-info">
               <h3>{{ city.name }}</h3>
-              <p>{{ city.hotelCount }}家酒店</p>
+              <p v-if="city.hotelCount > 0">{{ city.hotelCount }}家酒店</p>
             </div>
           </div>
         </div>
@@ -553,6 +553,7 @@ const hotels = ref([])
 const personalHotels = ref([])
 
 const defaultHotelImg = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop'
+const defaultCityImage = 'https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=300&h=200&fit=crop'
 const unreadCount = ref(0)
 const showBackTop = ref(false)
 
@@ -794,24 +795,33 @@ async function loadRecentReviews() {
 }
 
 async function loadHotCities() {
+  // 12 个种子城市默认列表，确保始终显示完整的 12 个城市
+  const seedCities = ['北京', '上海', '广州', '深圳', '成都', '杭州', '南京', '西安', '重庆', '武汉', '长沙', '厦门']
+  const cityMap = new Map(seedCities.map(name => [name, { name, hotelCount: 0, image: defaultCityImage }]))
+
   try {
     const res = await getHotCities()
-    if (res.data) hotCities.value = res.data
+    const data = res.data || res
+    const list = Array.isArray(data) ? data : (data?.rows || [])
+    list.forEach(c => {
+      const name = c.cityName || c.name
+      if (cityMap.has(name)) {
+        cityMap.set(name, {
+          name,
+          hotelCount: c.hotelCount ?? c.count ?? 0,
+          image: c.imageUrl || c.image || c.img || c.pic || defaultCityImage
+        })
+      }
+    })
   } catch {
-    hotCities.value = [
-      { name: '北京', hotelCount: 2356, image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=300&h=200&fit=crop' },
-      { name: '上海', hotelCount: 3120, image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop' },
-      { name: '广州', hotelCount: 1890, image: 'https://images.unsplash.com/photo-1559656914944-3d2426425947?w=300&h=200&fit=crop' },
-      { name: '深圳', hotelCount: 1650, image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=300&h=200&fit=crop' },
-      { name: '成都', hotelCount: 1450, image: 'https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?w=300&h=200&fit=crop' },
-      { name: '杭州', hotelCount: 1380, image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&h=200&fit=crop' }
-    ]
+    // API 失败时使用默认列表
   }
+  hotCities.value = Array.from(cityMap.values())
 }
 
 async function loadHotels() {
   try {
-    const res = await getRecommendHotels()
+    const res = await getRecommendHotels({ type: activeHotelTab.value })
     if (res.data) hotels.value = res.data
     else if (res.rows) hotels.value = res.rows
   } catch {
@@ -827,7 +837,7 @@ async function loadHotels() {
 async function loadPersonalRecommend() {
   if (!isLoggedIn.value) return
   try {
-    const res = await getPersonalRecommend()
+    const res = await getPersonalRecommend({ refresh: Date.now() })
     if (res.data) personalHotels.value = res.data
     else if (res.rows) personalHotels.value = res.rows
   } catch {

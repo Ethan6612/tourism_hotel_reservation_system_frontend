@@ -113,12 +113,12 @@
             @click="searchByCity(city.name)"
           >
             <div class="city-image">
-              <img :src="city.image" :alt="city.name" />
+              <img :src="city.image" :alt="city.name" @error="e => e.target.src = defaultCityImage" />
               <div class="city-overlay"></div>
             </div>
             <div class="city-info">
               <h3>{{ city.name }}</h3>
-              <p>{{ city.hotelCount }}家酒店</p>
+              <p v-if="city.hotelCount > 0">{{ city.hotelCount }}家酒店</p>
             </div>
           </div>
         </div>
@@ -135,7 +135,7 @@
               v-for="tab in tabs" 
               :key="tab.key" 
               :class="['tab-btn', { active: activeTab === tab.key }]"
-              @click="activeTab = tab.key"
+              @click="switchTab(tab.key)"
             >
               {{ tab.label }}
             </button>
@@ -270,6 +270,7 @@ const hotCities = ref([])
 const hotels = ref([])
 const hotSalesRank = ref([])
 const defaultHotelImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop'
+const defaultCityImage = 'https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=300&h=200&fit=crop'
 const activeTab = ref('recommend')
 const userDropdown = ref(null)
 
@@ -389,29 +390,38 @@ onMounted(() => {
 })
 
 async function loadHotCities() {
+  // 12 个种子城市默认列表，确保始终显示完整的 12 个城市
+  const seedCities = ['北京', '上海', '广州', '深圳', '成都', '杭州', '南京', '西安', '重庆', '武汉', '长沙', '厦门']
+  const cityMap = new Map(seedCities.map(name => [name, { name, hotelCount: 0, image: defaultCityImage }]))
+
   try {
     const res = await getHotCities()
     const data = res.data || res
-    if (Array.isArray(data) && data.length > 0) {
-      hotCities.value = data.map(c => ({
-        name: c.name || c.cityName,
-        hotelCount: c.hotelCount || c.count || 0,
-        image: c.image || c.img || c.pic || `https://images.unsplash.com/photo-1564507592333-c60657eea523?w=300&h=200&fit=crop`
-      }))
-    } else if (data?.rows?.length) {
-      hotCities.value = data.rows
-    } else {
-      hotCities.value = []
-    }
+    const list = Array.isArray(data) ? data : (data?.rows || [])
+    list.forEach(c => {
+      const name = c.cityName || c.name
+      if (cityMap.has(name)) {
+        cityMap.set(name, {
+          name,
+          hotelCount: c.hotelCount ?? c.count ?? 0,
+          image: c.imageUrl || c.image || c.img || c.pic || defaultCityImage
+        })
+      }
+    })
   } catch (error) {
     console.error('加载热门城市失败:', error)
-    hotCities.value = []
   }
+  hotCities.value = Array.from(cityMap.values())
+}
+
+function switchTab(key) {
+  activeTab.value = key
+  loadHotels()
 }
 
 async function loadHotels() {
   try {
-    const res = await getRecommendHotels()
+    const res = await getRecommendHotels({ type: activeTab.value })
     const data = res.data || res
     if (Array.isArray(data) && data.length > 0) {
       hotels.value = data
