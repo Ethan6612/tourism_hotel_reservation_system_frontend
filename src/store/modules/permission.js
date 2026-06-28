@@ -5,6 +5,7 @@ import Layout from '@/layout/index'
 import ParentView from '@/components/ParentView'
 import InnerLink from '@/layout/components/InnerLink'
 import useUserStore from '@/store/modules/user'
+import { isHttp } from '@/utils/validate'
 import { h } from 'vue'
 
 // 匹配views里面所有的.vue文件 - 使用绝对路径模式
@@ -120,6 +121,12 @@ const usePermissionStore = defineStore(
 
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
+            // ✅ 将后端返回的动态路由注册到router，确保登录和刷新场景路由都能正确匹配
+            rewriteRoutes.forEach(route => {
+              if (!isHttp(route.path)) {
+                router.addRoute(route)
+              }
+            })
             this.setRoutes(rewriteRoutes)
             
             // 过滤constantRoutes中带有roles限制的路由

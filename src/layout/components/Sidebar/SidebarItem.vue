@@ -83,11 +83,16 @@ function resolvePath(routePath, routeQuery) {
   if (isExternal(props.basePath)) {
     return props.basePath
   }
+  let resolvedPath = getNormalPath(props.basePath + '/' + routePath)
+  // 去掉尾部斜杠，确保路径与动态注册的路由一致，避免404
+  if (resolvedPath.length > 1 && resolvedPath.endsWith('/')) {
+    resolvedPath = resolvedPath.replace(/\/+$/, '')
+  }
   if (routeQuery) {
     let query = JSON.parse(routeQuery)
-    return { path: getNormalPath(props.basePath + '/' + routePath), query: query }
+    return { path: resolvedPath, query: query }
   }
-  return getNormalPath(props.basePath + '/' + routePath)
+  return resolvedPath
 }
 
 function hasTitle(title){

@@ -3,7 +3,7 @@ import { ElMessage } from 'element-plus'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { getToken } from '@/utils/auth'
-import { isHttp, isPathMatch } from '@/utils/validate'
+import { isPathMatch } from '@/utils/validate'
 import { isRelogin } from '@/utils/request'
 import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
@@ -40,14 +40,8 @@ router.beforeEach(async (to, from, next) => {
           // 判断当前用户是否已拉取完user_info信息
           await useUserStore().getInfo()
           isRelogin.show = false
-          const accessRoutes = await usePermissionStore().generateRoutes()
-          
-          // 根据roles权限生成可访问的路由表
-          accessRoutes.forEach(route => {
-            if (!isHttp(route.path)) {
-              router.addRoute(route) // 动态添加可访问路由表
-            }
-          })
+          // ✅ generateRoutes() 内部已自动将动态路由注册到router
+          await usePermissionStore().generateRoutes()
           
           // 获取用户角色
           const userRoles = useUserStore().roles
