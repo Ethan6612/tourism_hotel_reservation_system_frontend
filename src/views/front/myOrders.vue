@@ -201,9 +201,9 @@
                   >已完成</button>
                   <button
                     v-if="order.status === '3' && order.reviewed"
-                    class="order-btn reviewed"
-                    disabled
-                  >已评价</button>
+                    class="order-btn review-btn"
+                    @click="goToEditReview(order)"
+                  >修改评价</button>
                   <button
                     v-if="order.status === '4'"
                     class="order-btn detail-btn"
@@ -413,6 +413,12 @@ function goToWriteReview(order) {
     checkInDate: order.startDate || undefined,
     checkOutDate: order.endDate || undefined
   }})
+}
+
+function goToEditReview(order) {
+  if (order.commentId) {
+    router.push('/user/comment/edit/' + order.commentId)
+  }
 }
 
 function handleUserCommand(command) {

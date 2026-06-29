@@ -8,7 +8,9 @@
           <span class="logo-text">ZSC酒店预订</span>
         </div>
         <nav class="nav">
-          <a href="#" class="nav-item" @click.prevent="goHome">首页</a>
+          <a href="/home" class="nav-item">首页</a>
+          <a href="/search" class="nav-item">酒店</a>
+          <a href="#" class="nav-item" @click.prevent="goToOrders">我的订单</a>
           <a href="#" class="nav-item active">我的评价</a>
         </nav>
         <div class="user-actions">
@@ -239,7 +241,7 @@ const allComments = ref([])
 const searchHotel = ref('')
 const scoreFilter = ref(null)
 const defaultImg = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop'
-
+//定义state，存三个统计数据
 const stats = ref({ total: 0, avgScore: 0, likedCount: 0 })
 
 const viewOpen = ref(false)
@@ -373,6 +375,9 @@ onMounted(() => { loadData() })
 .user-dropdown:hover { background: rgba(0,0,0,0.05); }
 .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
 .user-name { font-size: 14px; color: #333; }
+.notification-bell { position: relative; cursor: pointer; padding: 4px; margin-right: 4px; }
+.bell-icon { font-size: 18px; }
+.badge { position: absolute; top: -2px; right: -2px; background: #ff6b6b; color: #fff; font-size: 10px; min-width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
 .action-btn { padding: 8px 20px; border: 1px solid #ddd; border-radius: 20px; background: #fff; color: #666; font-size: 14px; cursor: pointer; }
 .action-btn.primary { background: linear-gradient(135deg, #ff6b6b, #ee5a24); border-color: transparent; color: #fff; }
 .page-body { padding-top: 80px; }
